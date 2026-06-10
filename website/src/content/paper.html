@@ -5,24 +5,24 @@ parameters on an in-sample (IS) window, evaluate the selected
 configuration on the immediately following out-of-sample (OOS) segment,
 roll the window forward, and stitch the OOS segments into a single
 pseudo-live track record <span class="citation"
-data-cites="pardo1992design pardo2008evaluation tomasini2009trading">(Pardo
-1992, 2008; Tomasini and Jaekle 2009)</span>. Its acceptance statistic
-is the <em>walk-forward efficiency</em> of <span class="citation"
-data-cites="pardo2008evaluation">Pardo (2008)</span>: the ratio of OOS
-to IS performance, near one when the optimization captured persistent
+data-cites="pardo1992design pardo2008evaluation tomasini2009trading">[13,
+14, 18]</span>. Its acceptance statistic is the <em>walk-forward
+efficiency</em> of <span class="citation"
+data-cites="pardo2008evaluation">[14]</span>: the ratio of OOS to IS
+performance, near one when the optimization captured persistent
 structure and near zero when it curve-fit noise. The statistic is
 embedded in commercial tooling—TradeStation’s Walk-Forward Optimizer
 fails any strategy whose walk-forward efficiency falls below <span
 class="math inline">50\%</span> <span class="citation"
-data-cites="tradestation_wfo">(TradeStation Technologies,
-n.d.)</span>—and around it has grown an informal grading folklore:
-ratios above <span class="math inline">{\sim}0.8</span> signal
-robustness, <span class="math inline">0.5</span> marks the pass/fail
-boundary, and values below <span class="math inline">{\sim}0.3</span>
-indicate overfitting. In circulating recipes the ratio is often computed
-literally as summed OOS PnL over summed IS PnL, and read both in
-aggregate and window by window.<a href="#fn1" class="footnote-ref"
-id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+data-cites="tradestation_wfo">[19]</span>—and around it has grown an
+informal grading folklore: ratios above <span
+class="math inline">{\sim}0.8</span> signal robustness, <span
+class="math inline">0.5</span> marks the pass/fail boundary, and values
+below <span class="math inline">{\sim}0.3</span> indicate overfitting.
+In circulating recipes the ratio is often computed literally as summed
+OOS PnL over summed IS PnL, and read both in aggregate and window by
+window.<a href="#fn1" class="footnote-ref" id="fnref1"
+role="doc-noteref"><sup>1</sup></a></p>
 <p>None of this folklore has, to our knowledge, been measured where the
 truth is known. Does the walk-forward efficiency ratio (WFER) actually
 predict forward performance—and better than what alternative? Do the
@@ -30,14 +30,13 @@ thresholds correspond to calibrated decision boundaries? Should the IS
 window be anchored (expanding) or rolling, and how finely should the
 history be partitioned into folds? The academic literature rigorously
 treats adjacent problems—backtest overfitting <span class="citation"
-data-cites="bailey2014pseudomathematics bailey2017probability">(Bailey
-et al. 2014, 2017)</span>, data snooping <span class="citation"
-data-cites="white2000reality">(White 2000)</span>, splitting schemes for
+data-cites="bailey2014pseudomathematics bailey2017probability">[2,
+3]</span>, data snooping <span class="citation"
+data-cites="white2000reality">[20]</span>, splitting schemes for
 dependent data <span class="citation"
-data-cites="bergmeir2012use lopezdeprado2018advances">(Bergmeir and
-Benítez 2012; López de Prado 2018)</span>—but the WFE ratio itself, the
-statistic practitioners actually gate deployments on, has remained
-untested.</p>
+data-cites="bergmeir2012use lopezdeprado2018advances">[5, 12]</span>—but
+the WFE ratio itself, the statistic practitioners actually gate
+deployments on, has remained untested.</p>
 <p>We provide that test in a controlled simulation. A one-parameter
 strategy family has a population annualized-Sharpe surface that we
 control exactly, including how its optimum moves through time: it can
@@ -121,25 +120,24 @@ id="walk-forward-optimization-and-the-efficiency-ratio.">Walk-forward
 optimization and the efficiency ratio.</h4>
 <p>Walk-forward analysis originates in the practitioner literature on
 trading-system development. <span class="citation"
-data-cites="pardo1992design">Pardo (1992)</span> introduced the
-procedure of repeatedly optimizing a strategy’s parameters on an IS
-window and evaluating the selected configuration on the immediately
-following OOS segment, stitching the OOS segments into a single
-pseudo-live track record. The substantially revised second edition <span
-class="citation" data-cites="pardo2008evaluation">(Pardo 2008)</span>
-systematized the methodology and proposed the <em>walk-forward
-efficiency</em> (WFE)—the ratio of annualized OOS performance to
-annualized IS performance—as the central diagnostic of whether an
-optimization captured persistent structure or merely curve-fit noise.
-Practitioner texts adopted the procedure essentially unchanged <span
-class="citation" data-cites="tomasini2009trading">(Tomasini and Jaekle
-2009)</span>, and it is now embedded in retail and institutional
-tooling: TradeStation’s Walk-Forward Optimizer, for example, fails any
-strategy whose WFE falls below <span class="math inline">50\%</span>
-under its default test criteria <span class="citation"
-data-cites="tradestation_wfo">(TradeStation Technologies, n.d.)</span>.
-Around this default has grown an informal grading folklore—ratios near
-<span class="math inline">0.8</span> signal robustness, <span
+data-cites="pardo1992design">[13]</span> introduced the procedure of
+repeatedly optimizing a strategy’s parameters on an IS window and
+evaluating the selected configuration on the immediately following OOS
+segment, stitching the OOS segments into a single pseudo-live track
+record. The substantially revised second edition <span class="citation"
+data-cites="pardo2008evaluation">[14]</span> systematized the
+methodology and proposed the <em>walk-forward efficiency</em> (WFE)—the
+ratio of annualized OOS performance to annualized IS performance—as the
+central diagnostic of whether an optimization captured persistent
+structure or merely curve-fit noise. Practitioner texts adopted the
+procedure essentially unchanged <span class="citation"
+data-cites="tomasini2009trading">[18]</span>, and it is now embedded in
+retail and institutional tooling: TradeStation’s Walk-Forward Optimizer,
+for example, fails any strategy whose WFE falls below <span
+class="math inline">50\%</span> under its default test criteria <span
+class="citation" data-cites="tradestation_wfo">[19]</span>. Around this
+default has grown an informal grading folklore—ratios near <span
+class="math inline">0.8</span> signal robustness, <span
 class="math inline">0.5</span> marks the pass/fail boundary, and values
 below roughly <span class="math inline">0.3</span> indicate
 overfitting—that circulates in platform documentation, trading courses,
@@ -155,29 +153,28 @@ should be partitioned into walk-forward folds.</p>
 and multiple testing.</h4>
 <p>A parallel academic literature has quantified how easily backtests
 mislead. <span class="citation"
-data-cites="bailey2014pseudomathematics">Bailey et al. (2014)</span>
-showed that the expected maximum Sharpe ratio over <span
-class="math inline">N</span> random configurations grows without bound,
-so impressive IS results are nearly guaranteed given enough trials.
-<span class="citation" data-cites="bailey2017probability">Bailey et al.
-(2017)</span> formalized the <em>probability of backtest
-overfitting</em> (PBO) via combinatorially symmetric cross-validation
-(CSCV), which evaluates whether configurations selected in-sample
-systematically underperform out-of-sample. <span class="citation"
-data-cites="bailey2014deflated">Bailey and López de Prado (2014)</span>
-derived the deflated Sharpe ratio, which corrects observed performance
-for the number of trials and non-normality, and <span class="citation"
-data-cites="harvey2015backtesting">Harvey and Liu (2015)</span> proposed
-multiple-testing haircuts to reported Sharpe ratios; <span
-class="citation" data-cites="arnott2019backtesting">Arnott et al.
-(2019)</span> distilled these concerns into a research protocol for the
-machine-learning era. This line of work descends from the data-snooping
-literature in econometrics: <span class="citation"
-data-cites="white2000reality">White (2000)</span> introduced the Reality
-Check for testing whether the best of many models beats a benchmark
-after accounting for the search, and <span class="citation"
-data-cites="hansen2005test">Hansen (2005)</span> sharpened it into the
-more powerful Superior Predictive Ability test. These tools diagnose
+data-cites="bailey2014pseudomathematics">[2]</span> showed that the
+expected maximum Sharpe ratio over <span class="math inline">N</span>
+random configurations grows without bound, so impressive IS results are
+nearly guaranteed given enough trials. <span class="citation"
+data-cites="bailey2017probability">[3]</span> formalized the
+<em>probability of backtest overfitting</em> (PBO) via combinatorially
+symmetric cross-validation (CSCV), which evaluates whether
+configurations selected in-sample systematically underperform
+out-of-sample. <span class="citation"
+data-cites="bailey2014deflated">[4]</span> derived the deflated Sharpe
+ratio, which corrects observed performance for the number of trials and
+non-normality, and <span class="citation"
+data-cites="harvey2015backtesting">[9]</span> proposed multiple-testing
+haircuts to reported Sharpe ratios; <span class="citation"
+data-cites="arnott2019backtesting">[1]</span> distilled these concerns
+into a research protocol for the machine-learning era. This line of work
+descends from the data-snooping literature in econometrics: <span
+class="citation" data-cites="white2000reality">[20]</span> introduced
+the Reality Check for testing whether the best of many models beats a
+benchmark after accounting for the search, and <span class="citation"
+data-cites="hansen2005test">[8]</span> sharpened it into the more
+powerful Superior Predictive Ability test. These tools diagnose
 selection bias <em>given</em> a backtesting protocol; they do not tell
 us whether walk-forward validation itself—the protocol practitioners
 actually use to combat overfitting—produces forward-performance
@@ -187,23 +184,21 @@ under regime change.</p>
 dependent data.</h4>
 <p>A third strand asks how predictive accuracy should be estimated for
 time series at all. <span class="citation"
-data-cites="tashman2000outofsample">Tashman (2000)</span> reviewed
-out-of-sample evaluation designs—fixed versus rolling origins, window
-updating, single versus multiple test periods—and noted how sensitive
-conclusions are to these choices. <span class="citation"
-data-cites="bergmeir2012use">Bergmeir and Benítez (2012)</span> compared
-blocked and standard cross-validation against last-block evaluation for
-machine-learning predictors, finding cross-validation often yields more
-robust model selection; <span class="citation"
-data-cites="bergmeir2018note">Bergmeir et al. (2018)</span> proved that
-standard <span class="math inline">k</span>-fold cross-validation
-remains valid for purely autoregressive models with uncorrelated errors.
-Conversely, <span class="citation"
-data-cites="cerqueira2020evaluating">Cerqueira et al. (2020)</span>
-found empirically that out-of-sample (forward) procedures are more
-reliable than cross-validation when series are non-stationary. In
-finance, <span class="citation"
-data-cites="lopezdeprado2018advances">López de Prado (2018)</span>
+data-cites="tashman2000outofsample">[17]</span> reviewed out-of-sample
+evaluation designs—fixed versus rolling origins, window updating, single
+versus multiple test periods—and noted how sensitive conclusions are to
+these choices. <span class="citation"
+data-cites="bergmeir2012use">[5]</span> compared blocked and standard
+cross-validation against last-block evaluation for machine-learning
+predictors, finding cross-validation often yields more robust model
+selection; <span class="citation"
+data-cites="bergmeir2018note">[6]</span> proved that standard <span
+class="math inline">k</span>-fold cross-validation remains valid for
+purely autoregressive models with uncorrelated errors. Conversely, <span
+class="citation" data-cites="cerqueira2020evaluating">[7]</span> found
+empirically that out-of-sample (forward) procedures are more reliable
+than cross-validation when series are non-stationary. In finance, <span
+class="citation" data-cites="lopezdeprado2018advances">[12]</span>
 argued that naive <span class="math inline">k</span>-fold leaks
 information through overlapping and serially correlated labels,
 proposing purged <span class="math inline">k</span>-fold and
@@ -216,39 +211,36 @@ remained outside its scope.</p>
 id="in-sample-versus-out-of-sample-tests-and-window-choice.">In-sample
 versus out-of-sample tests and window choice.</h4>
 <p>Econometricians have long questioned the primacy of OOS evidence.
-<span class="citation" data-cites="inoue2005insample">Inoue and Kilian
-(2005)</span> showed that in-sample and out-of-sample predictability
-tests are equally reliable under the null, and that sample-splitting
-sacrifices power, so insisting on OOS confirmation is not a free lunch.
-<span class="citation" data-cites="rossi2012outofsample">Rossi and Inoue
-(2012)</span> demonstrated that OOS conclusions can hinge on the
-arbitrary choice of estimation-window size and proposed tests robust to
-that choice, while <span class="citation"
-data-cites="inoue2017rolling">Inoue et al. (2017)</span> derived optimal
-rolling-window sizes when parameters drift—directly relevant to the
-anchored-versus-rolling question in walk-forward design. The survey of
-<span class="citation" data-cites="rossi2013exchange">Rossi
-(2013)</span> documents pervasive model instability as a central fact of
-predictive finance. These results imply that walk-forward outcomes are
-functions of window design in ways practitioners rarely acknowledge, but
-the literature evaluates forecast accuracy tests, not
-parameter-selection pipelines with a WFE-style acceptance rule.</p>
+<span class="citation" data-cites="inoue2005insample">[11]</span> showed
+that in-sample and out-of-sample predictability tests are equally
+reliable under the null, and that sample-splitting sacrifices power, so
+insisting on OOS confirmation is not a free lunch. <span
+class="citation" data-cites="rossi2012outofsample">[16]</span>
+demonstrated that OOS conclusions can hinge on the arbitrary choice of
+estimation-window size and proposed tests robust to that choice, while
+<span class="citation" data-cites="inoue2017rolling">[10]</span> derived
+optimal rolling-window sizes when parameters drift—directly relevant to
+the anchored-versus-rolling question in walk-forward design. The survey
+of <span class="citation" data-cites="rossi2013exchange">[15]</span>
+documents pervasive model instability as a central fact of predictive
+finance. These results imply that walk-forward outcomes are functions of
+window design in ways practitioners rarely acknowledge, but the
+literature evaluates forecast accuracy tests, not parameter-selection
+pipelines with a WFE-style acceptance rule.</p>
 <h4 id="positioning.">Positioning.</h4>
 <p>In sum, walk-forward optimization is the de facto standard validation
 protocol in systematic trading, and the walk-forward efficiency ratio is
 its de facto acceptance statistic—yet both live almost entirely in
 practitioner folklore. The academic literature offers rigorous tools for
 adjacent problems: detecting data snooping <span class="citation"
-data-cites="white2000reality hansen2005test">(White 2000; Hansen
-2005)</span>, quantifying backtest overfitting <span class="citation"
-data-cites="bailey2017probability bailey2014deflated">(Bailey et al.
-2017; Bailey and López de Prado 2014)</span>, and choosing splitting
-schemes for dependent data <span class="citation"
-data-cites="bergmeir2012use lopezdeprado2018advances cerqueira2020evaluating">(Bergmeir
-and Benítez 2012; López de Prado 2018; Cerqueira et al. 2020)</span>.
-None of it validates the WFE ratio against a known ground truth, tests
-the <span class="math inline">0.8/0.5/0.3</span> folk thresholds, or
-compares anchored and rolling walk-forward against purged
+data-cites="white2000reality hansen2005test">[8, 20]</span>, quantifying
+backtest overfitting <span class="citation"
+data-cites="bailey2017probability bailey2014deflated">[3, 4]</span>, and
+choosing splitting schemes for dependent data <span class="citation"
+data-cites="bergmeir2012use lopezdeprado2018advances cerqueira2020evaluating">[5,
+7, 12]</span>. None of it validates the WFE ratio against a known ground
+truth, tests the <span class="math inline">0.8/0.5/0.3</span> folk
+thresholds, or compares anchored and rolling walk-forward against purged
 cross-validation under controlled stationarity, drift, and structural
 breaks. This paper fills that gap with a simulation study in which the
 true, time-varying Sharpe surface is known by construction, so the
@@ -344,19 +336,19 @@ the textbook CV selection: argmax of the mean per-fold test
 Sharpe.</p></li>
 <li><p><strong>CPCV-lite</strong>: a documented simplification of
 combinatorial purged cross-validation <span class="citation"
-data-cites="lopezdeprado2018advances">(López de Prado 2018)</span>: the
-history is cut into <span class="math inline">6</span> contiguous
-groups, every <span class="math inline">\binom{6}{2}=15</span> choice of
-<span class="math inline">2</span> test groups forms a fold, and an
-embargo of <span class="math inline">10</span> periods is dropped from
-the train set at each test-group boundary. We call it “lite”
-deliberately: in our generative model returns are serially independent
-given the surface, so there are no overlapping labels to purge; the
-embargo mirrors the procedure as practiced rather than removing genuine
-leakage. (CPCV is distinct from the CSCV scheme of <span
-class="citation" data-cites="bailey2017probability">Bailey et al.
-(2017)</span>, which underlies PBO.) Deploys the argmax over the full
-history, per the final-fit convention.</p></li>
+data-cites="lopezdeprado2018advances">[12]</span>: the history is cut
+into <span class="math inline">6</span> contiguous groups, every <span
+class="math inline">\binom{6}{2}=15</span> choice of <span
+class="math inline">2</span> test groups forms a fold, and an embargo of
+<span class="math inline">10</span> periods is dropped from the train
+set at each test-group boundary. We call it “lite” deliberately: in our
+generative model returns are serially independent given the surface, so
+there are no overlapping labels to purge; the embargo mirrors the
+procedure as practiced rather than removing genuine leakage. (CPCV is
+distinct from the CSCV scheme of <span class="citation"
+data-cites="bailey2017probability">[3]</span>, which underlies PBO.)
+Deploys the argmax over the full history, per the final-fit
+convention.</p></li>
 </ul>
 <h4 id="diagnostics.">Diagnostics.</h4>
 <p>From each procedure’s folds we record the two WFER variants <a
@@ -960,7 +952,7 @@ gained if it drifts or breaks. The choice is a bet on non-stationarity,
 not a free robustness upgrade. This echoes, in a selection-pipeline
 setting, the econometric result that rolling-window size should be tuned
 to the degree of parameter drift <span class="citation"
-data-cites="inoue2017rolling">(Inoue et al. 2017)</span>.</p>
+data-cites="inoue2017rolling">[10]</span>.</p>
 <h2 id="sec:window">Window design matters for the estimate, not the
 deployment</h2>
 <figure id="fig:window" data-latex-placement="t">
@@ -1170,13 +1162,12 @@ precisely the most relevant.</p>
 <p>The shuffled <span class="math inline">k</span>-fold is the most
 optimistic estimator overall (<span class="math inline">+0.083</span>
 Sharpe bias), and its failure is regime-specific in the way <span
-class="citation" data-cites="lopezdeprado2018advances">López de Prado
-(2018)</span> and <span class="citation"
-data-cites="cerqueira2020evaluating">Cerqueira et al. (2020)</span>
+class="citation" data-cites="lopezdeprado2018advances">[12]</span> and
+<span class="citation" data-cites="cerqueira2020evaluating">[7]</span>
 would predict: essentially unbiased under stationarity (<span
 class="math inline">-0.006</span>, consistent with the validity result
-of <span class="citation" data-cites="bergmeir2018note">Bergmeir et al.
-(2018)</span> for this serially independent DGP), but <span
+of <span class="citation" data-cites="bergmeir2018note">[6]</span> for
+this serially independent DGP), but <span
 class="math inline">+0.191</span> under drift and <span
 class="math inline">+0.147</span> under break, because interleaved test
 folds let the procedure train on the future of the very points it tests.
@@ -1198,10 +1189,10 @@ class="math inline">0.524</span>–<span class="math inline">0.541</span>
 for everything else): averaging <span class="math inline">15</span>
 combinatorial paths stabilizes the estimate even in a DGP with no label
 leakage to purge, supporting the multiple-paths argument for CPCV <span
-class="citation" data-cites="lopezdeprado2018advances">(López de Prado
-2018)</span> on grounds independent of purging. The single split is the
-weakest ranker (<span class="math inline">0.477</span>) as well as the
-weakest deployer—the worst of both worlds.</p>
+class="citation" data-cites="lopezdeprado2018advances">[12]</span> on
+grounds independent of purging. The single split is the weakest ranker
+(<span class="math inline">0.477</span>) as well as the weakest
+deployer—the worst of both worlds.</p>
 <h1 id="sec:discussion">Discussion</h1>
 <h4
 id="if-you-run-walk-forward-you-already-have-something-better-than-wfer.">If
@@ -1326,124 +1317,154 @@ and <code>scripts/check_paper_numbers.py</code> verifies that every
 number quoted in this paper matches the generated results to rounding.
 The generative model, the five procedures, the diagnostics, and the
 analysis are provided as an open-source package.</p>
-<h1 id="references">References</h1><div id="refs" class="references csl-bib-body hanging-indent"
+<h1 id="references">References</h1><div id="refs" class="references csl-bib-body" data-entry-spacing="1"
 role="list">
 <div id="ref-arnott2019backtesting" class="csl-entry" role="listitem">
-Arnott, Rob, Campbell R. Harvey, and Harry Markowitz. 2019. <span>“A
-Backtesting Protocol in the Era of Machine Learning.”</span> <em>The
-Journal of Financial Data Science</em> 1 (1): 64–74. <a
-href="https://doi.org/10.3905/jfds.2019.1.064">https://doi.org/10.3905/jfds.2019.1.064</a>.
+<div class="csl-left-margin">[1] </div><div class="csl-right-inline">Rob
+Arnott, Campbell R. Harvey, and Harry Markowitz. A backtesting protocol
+in the era of machine learning. <em>The Journal of Financial Data
+Science</em>, 1(1):64–74, 2019. doi: <a
+href="https://doi.org/10.3905/jfds.2019.1.064">10.3905/jfds.2019.1.064</a>.</div>
 </div>
 <div id="ref-bailey2014pseudomathematics" class="csl-entry"
 role="listitem">
-Bailey, David H., Jonathan M. Borwein, Marcos López de Prado, and Qiji
-Jim Zhu. 2014. <span>“Pseudo-Mathematics and Financial Charlatanism: The
-Effects of Backtest Overfitting on Out-of-Sample Performance.”</span>
-<em>Notices of the American Mathematical Society</em> 61 (5): 458–71. <a
-href="https://doi.org/10.1090/noti1105">https://doi.org/10.1090/noti1105</a>.
+<div class="csl-left-margin">[2] </div><div
+class="csl-right-inline">David H. Bailey, Jonathan M. Borwein, Marcos
+López de Prado, and Qiji Jim Zhu. Pseudo-mathematics and financial
+charlatanism: The effects of backtest overfitting on out-of-sample
+performance. <em>Notices of the American Mathematical Society</em>,
+61(5):458–471, 2014. doi: <a
+href="https://doi.org/10.1090/noti1105">10.1090/noti1105</a>.</div>
 </div>
 <div id="ref-bailey2017probability" class="csl-entry" role="listitem">
-Bailey, David H., Jonathan M. Borwein, Marcos López de Prado, and Qiji
-Jim Zhu. 2017. <span>“The Probability of Backtest Overfitting.”</span>
-<em>Journal of Computational Finance</em> 20 (4): 39–69. <a
-href="https://doi.org/10.21314/JCF.2016.322">https://doi.org/10.21314/JCF.2016.322</a>.
+<div class="csl-left-margin">[3] </div><div
+class="csl-right-inline">David H. Bailey, Jonathan M. Borwein, Marcos
+López de Prado, and Qiji Jim Zhu. The probability of backtest
+overfitting. <em>Journal of Computational Finance</em>, 20(4):39–69,
+2017. doi: <a
+href="https://doi.org/10.21314/JCF.2016.322">10.21314/JCF.2016.322</a>.</div>
 </div>
 <div id="ref-bailey2014deflated" class="csl-entry" role="listitem">
-Bailey, David H., and Marcos López de Prado. 2014. <span>“The Deflated
-<span>Sharpe</span> Ratio: Correcting for Selection Bias, Backtest
-Overfitting, and Non-Normality.”</span> <em>The Journal of Portfolio
-Management</em> 40 (5): 94–107. <a
-href="https://doi.org/10.3905/jpm.2014.40.5.094">https://doi.org/10.3905/jpm.2014.40.5.094</a>.
+<div class="csl-left-margin">[4] </div><div
+class="csl-right-inline">David H. Bailey and Marcos López de Prado. The
+deflated <span>Sharpe</span> ratio: Correcting for selection bias,
+backtest overfitting, and non-normality. <em>The Journal of Portfolio
+Management</em>, 40(5):94–107, 2014. doi: <a
+href="https://doi.org/10.3905/jpm.2014.40.5.094">10.3905/jpm.2014.40.5.094</a>.</div>
 </div>
 <div id="ref-bergmeir2012use" class="csl-entry" role="listitem">
-Bergmeir, Christoph, and José M. Benítez. 2012. <span>“On the Use of
-Cross-Validation for Time Series Predictor Evaluation.”</span>
-<em>Information Sciences</em> 191: 192–213. <a
-href="https://doi.org/10.1016/j.ins.2011.12.028">https://doi.org/10.1016/j.ins.2011.12.028</a>.
+<div class="csl-left-margin">[5] </div><div
+class="csl-right-inline">Christoph Bergmeir and José M. Benítez. On the
+use of cross-validation for time series predictor evaluation.
+<em>Information Sciences</em>, 191:192–213, 2012. doi: <a
+href="https://doi.org/10.1016/j.ins.2011.12.028">10.1016/j.ins.2011.12.028</a>.</div>
 </div>
 <div id="ref-bergmeir2018note" class="csl-entry" role="listitem">
-Bergmeir, Christoph, Rob J. Hyndman, and Bonsoo Koo. 2018. <span>“A Note
-on the Validity of Cross-Validation for Evaluating Autoregressive Time
-Series Prediction.”</span> <em>Computational Statistics &amp; Data
-Analysis</em> 120: 70–83. <a
-href="https://doi.org/10.1016/j.csda.2017.11.003">https://doi.org/10.1016/j.csda.2017.11.003</a>.
+<div class="csl-left-margin">[6] </div><div
+class="csl-right-inline">Christoph Bergmeir, Rob J. Hyndman, and Bonsoo
+Koo. A note on the validity of cross-validation for evaluating
+autoregressive time series prediction. <em>Computational Statistics
+&amp; Data Analysis</em>, 120:70–83, 2018. doi: <a
+href="https://doi.org/10.1016/j.csda.2017.11.003">10.1016/j.csda.2017.11.003</a>.</div>
 </div>
 <div id="ref-cerqueira2020evaluating" class="csl-entry" role="listitem">
-Cerqueira, Vitor, Luis Torgo, and Igor Mozetič. 2020. <span>“Evaluating
-Time Series Forecasting Models: An Empirical Study on Performance
-Estimation Methods.”</span> <em>Machine Learning</em> 109 (11):
-1997–2028. <a
-href="https://doi.org/10.1007/s10994-020-05910-7">https://doi.org/10.1007/s10994-020-05910-7</a>.
+<div class="csl-left-margin">[7] </div><div
+class="csl-right-inline">Vitor Cerqueira, Luis Torgo, and Igor Mozetič.
+Evaluating time series forecasting models: An empirical study on
+performance estimation methods. <em>Machine Learning</em>,
+109(11):1997–2028, 2020. doi: <a
+href="https://doi.org/10.1007/s10994-020-05910-7">10.1007/s10994-020-05910-7</a>.</div>
 </div>
 <div id="ref-hansen2005test" class="csl-entry" role="listitem">
-Hansen, Peter Reinhard. 2005. <span>“A Test for Superior Predictive
-Ability.”</span> <em>Journal of Business &amp; Economic Statistics</em>
-23 (4): 365–80. <a
-href="https://doi.org/10.1198/073500105000000063">https://doi.org/10.1198/073500105000000063</a>.
+<div class="csl-left-margin">[8] </div><div
+class="csl-right-inline">Peter Reinhard Hansen. A test for superior
+predictive ability. <em>Journal of Business &amp; Economic
+Statistics</em>, 23(4):365–380, 2005. doi: <a
+href="https://doi.org/10.1198/073500105000000063">10.1198/073500105000000063</a>.</div>
 </div>
 <div id="ref-harvey2015backtesting" class="csl-entry" role="listitem">
-Harvey, Campbell R., and Yan Liu. 2015. <span>“Backtesting.”</span>
-<em>The Journal of Portfolio Management</em> 42 (1): 13–28. <a
-href="https://doi.org/10.3905/jpm.2015.42.1.013">https://doi.org/10.3905/jpm.2015.42.1.013</a>.
+<div class="csl-left-margin">[9] </div><div
+class="csl-right-inline">Campbell R. Harvey and Yan Liu. Backtesting.
+<em>The Journal of Portfolio Management</em>, 42(1):13–28, 2015. doi: <a
+href="https://doi.org/10.3905/jpm.2015.42.1.013">10.3905/jpm.2015.42.1.013</a>.</div>
 </div>
 <div id="ref-inoue2017rolling" class="csl-entry" role="listitem">
-Inoue, Atsushi, Lu Jin, and Barbara Rossi. 2017. <span>“Rolling Window
-Selection for Out-of-Sample Forecasting with Time-Varying
-Parameters.”</span> <em>Journal of Econometrics</em> 196 (1): 55–67. <a
-href="https://doi.org/10.1016/j.jeconom.2016.03.006">https://doi.org/10.1016/j.jeconom.2016.03.006</a>.
+<div class="csl-left-margin">[10] </div><div
+class="csl-right-inline">Atsushi Inoue, Lu Jin, and Barbara Rossi.
+Rolling window selection for out-of-sample forecasting with time-varying
+parameters. <em>Journal of Econometrics</em>, 196(1):55–67, 2017. doi:
+<a
+href="https://doi.org/10.1016/j.jeconom.2016.03.006">10.1016/j.jeconom.2016.03.006</a>.</div>
 </div>
 <div id="ref-inoue2005insample" class="csl-entry" role="listitem">
-Inoue, Atsushi, and Lutz Kilian. 2005. <span>“In-Sample or Out-of-Sample
-Tests of Predictability: Which One Should We Use?”</span>
-<em>Econometric Reviews</em> 23 (4): 371–402. <a
-href="https://doi.org/10.1081/ETC-200040785">https://doi.org/10.1081/ETC-200040785</a>.
+<div class="csl-left-margin">[11] </div><div
+class="csl-right-inline">Atsushi Inoue and Lutz Kilian. In-sample or
+out-of-sample tests of predictability: Which one should we use?
+<em>Econometric Reviews</em>, 23(4):371–402, 2005. doi: <a
+href="https://doi.org/10.1081/ETC-200040785">10.1081/ETC-200040785</a>.</div>
 </div>
 <div id="ref-lopezdeprado2018advances" class="csl-entry"
 role="listitem">
-López de Prado, Marcos. 2018. <em>Advances in Financial Machine
-Learning</em>. John Wiley &amp; Sons.
+<div class="csl-left-margin">[12] </div><div
+class="csl-right-inline">Marcos López de Prado. <em>Advances in
+financial machine learning</em>. John Wiley &amp; Sons, 2018. Chapters 7
+and 11–12 cover purged <span class="math inline">k</span>-fold and
+combinatorial purged cross-validation (CPCV).</div>
 </div>
 <div id="ref-pardo1992design" class="csl-entry" role="listitem">
-Pardo, Robert. 1992. <em>Design, Testing, and Optimization of Trading
-Systems</em>. John Wiley &amp; Sons.
+<div class="csl-left-margin">[13] </div><div
+class="csl-right-inline">Robert Pardo. <em>Design, testing, and
+optimization of trading systems</em>. John Wiley &amp; Sons, 1992. First
+presentation of walk-forward analysis.</div>
 </div>
 <div id="ref-pardo2008evaluation" class="csl-entry" role="listitem">
-Pardo, Robert. 2008. <em>The Evaluation and Optimization of Trading
-Strategies</em>. 2nd ed. John Wiley &amp; Sons. <a
-href="https://doi.org/10.1002/9781119196969">https://doi.org/10.1002/9781119196969</a>.
+<div class="csl-left-margin">[14] </div><div
+class="csl-right-inline">Robert Pardo. <em>The evaluation and
+optimization of trading strategies</em>. John Wiley &amp; Sons, 2008.
+doi: <a
+href="https://doi.org/10.1002/9781119196969">10.1002/9781119196969</a>.
+Defines walk-forward analysis and walk-forward efficiency (WFE).</div>
 </div>
 <div id="ref-rossi2013exchange" class="csl-entry" role="listitem">
-Rossi, Barbara. 2013. <span>“Exchange Rate Predictability.”</span>
-<em>Journal of Economic Literature</em> 51 (4): 1063–119. <a
-href="https://doi.org/10.1257/jel.51.4.1063">https://doi.org/10.1257/jel.51.4.1063</a>.
+<div class="csl-left-margin">[15] </div><div
+class="csl-right-inline">Barbara Rossi. Exchange rate predictability.
+<em>Journal of Economic Literature</em>, 51(4):1063–1119, 2013. doi: <a
+href="https://doi.org/10.1257/jel.51.4.1063">10.1257/jel.51.4.1063</a>.</div>
 </div>
 <div id="ref-rossi2012outofsample" class="csl-entry" role="listitem">
-Rossi, Barbara, and Atsushi Inoue. 2012. <span>“Out-of-Sample Forecast
-Tests Robust to the Choice of Window Size.”</span> <em>Journal of
-Business &amp; Economic Statistics</em> 30 (3): 432–53. <a
-href="https://doi.org/10.1080/07350015.2012.693850">https://doi.org/10.1080/07350015.2012.693850</a>.
+<div class="csl-left-margin">[16] </div><div
+class="csl-right-inline">Barbara Rossi and Atsushi Inoue. Out-of-sample
+forecast tests robust to the choice of window size. <em>Journal of
+Business &amp; Economic Statistics</em>, 30(3):432–453, 2012. doi: <a
+href="https://doi.org/10.1080/07350015.2012.693850">10.1080/07350015.2012.693850</a>.</div>
 </div>
 <div id="ref-tashman2000outofsample" class="csl-entry" role="listitem">
-Tashman, Leonard J. 2000. <span>“Out-of-Sample Tests of Forecasting
-Accuracy: An Analysis and Review.”</span> <em>International Journal of
-Forecasting</em> 16 (4): 437–50. <a
-href="https://doi.org/10.1016/S0169-2070(00)00065-0">https://doi.org/10.1016/S0169-2070(00)00065-0</a>.
+<div class="csl-left-margin">[17] </div><div
+class="csl-right-inline">Leonard J. Tashman. Out-of-sample tests of
+forecasting accuracy: An analysis and review. <em>International Journal
+of Forecasting</em>, 16(4):437–450, 2000. doi: <a
+href="https://doi.org/10.1016/S0169-2070(00)00065-0">10.1016/S0169-2070(00)00065-0</a>.</div>
 </div>
 <div id="ref-tomasini2009trading" class="csl-entry" role="listitem">
-Tomasini, Emilio, and Urban Jaekle. 2009. <em>Trading Systems: A New
-Approach to System Development and Portfolio Optimisation</em>. Harriman
-House.
+<div class="csl-left-margin">[18] </div><div
+class="csl-right-inline">Emilio Tomasini and Urban Jaekle. <em>Trading
+systems: A new approach to system development and portfolio
+optimisation</em>. Harriman House, 2009.</div>
 </div>
 <div id="ref-tradestation_wfo" class="csl-entry" role="listitem">
-TradeStation Technologies. n.d. <em>About the Walk-Forward
-Optimizer</em>. TradeStation Platform Help, <a
+<div class="csl-left-margin">[19] </div><div
+class="csl-right-inline">TradeStation Technologies. About the
+walk-forward optimizer. TradeStation Platform Help, <a
 href="https://help.tradestation.com/10_00/eng/tswfo/topics/about_wfo.htm"
 class="uri">https://help.tradestation.com/10_00/eng/tswfo/topics/about_wfo.htm</a>.
+Software documentation; default pass criterion requires walk-forward
+efficiency of 50% or better. Accessed June 2026.</div>
 </div>
 <div id="ref-white2000reality" class="csl-entry" role="listitem">
-White, Halbert. 2000. <span>“A Reality Check for Data Snooping.”</span>
-<em>Econometrica</em> 68 (5): 1097–126. <a
-href="https://doi.org/10.1111/1468-0262.00152">https://doi.org/10.1111/1468-0262.00152</a>.
+<div class="csl-left-margin">[20] </div><div
+class="csl-right-inline">Halbert White. A reality check for data
+snooping. <em>Econometrica</em>, 68(5):1097–1126, 2000. doi: <a
+href="https://doi.org/10.1111/1468-0262.00152">10.1111/1468-0262.00152</a>.</div>
 </div>
 </div>
 <section id="footnotes" class="footnotes footnotes-end-of-document"
@@ -1459,9 +1480,9 @@ circulated, not an attack on a third party. The thresholds have no
 citable primary source that we could locate; the only stable documented
 artifact is TradeStation’s WFE <span class="math inline">\ge 50\%</span>
 pass criterion <span class="citation"
-data-cites="tradestation_wfo">(TradeStation Technologies, n.d.)</span>,
-and we deliberately do not attribute the triple to <span
-class="citation" data-cites="pardo2008evaluation">Pardo (2008)</span>.<a
-href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+data-cites="tradestation_wfo">[19]</span>, and we deliberately do not
+attribute the triple to <span class="citation"
+data-cites="pardo2008evaluation">[14]</span>.<a href="#fnref1"
+class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
 </section>
