@@ -291,14 +291,14 @@ class="math display">\begin{equation}
 \end{equation}</span> The distinction is not cosmetic. In walk-forward
 practice the IS windows are several times longer than the OOS windows
 (three to four times in our designs), so <a href="#eq:raw"
-data-reference-type="eqref" data-reference="eq:raw">[eq:raw]</a> divides
+data-reference-type="eqref" data-reference="eq:raw">(raw)</a> divides
 PnL accumulated over very different amounts of time: even a perfectly
 persistent edge scores <span
 class="math inline">\mathrm{WFER}_{\mathrm{raw}} \approx
 N_{\mathrm{OOS}}/N_{\mathrm{IS}} \approx
 0.25</span>–<span class="math inline">0.33</span>. The normalized form
 <a href="#eq:norm" data-reference-type="eqref"
-data-reference="eq:norm">[eq:norm]</a> is the only reading under which
+data-reference="eq:norm">(norm)</a> is the only reading under which
 the folk thresholds (<span class="math inline">\ge 0.8</span>
 “excellent,” <span class="math inline">0.5</span>–<span
 class="math inline">0.8</span> “acceptable,” <span
@@ -361,8 +361,8 @@ history, per the final-fit convention.</p></li>
 <h4 id="diagnostics.">Diagnostics.</h4>
 <p>From each procedure’s folds we record the two WFER variants <a
 href="#eq:raw" data-reference-type="eqref"
-data-reference="eq:raw">[eq:raw]</a>–<a href="#eq:norm"
-data-reference-type="eqref" data-reference="eq:norm">[eq:norm]</a> and
+data-reference="eq:raw">(raw)</a>–<a href="#eq:norm"
+data-reference-type="eqref" data-reference="eq:norm">(norm)</a> and
 five simpler statistics computed from the same raw material: the
 <em>stitched OOS Sharpe</em> (annualized Sharpe of the concatenated
 test-window returns of the per-fold selections), the <em>OOS <span
@@ -521,17 +521,15 @@ class="math inline">p</span> below machine precision. AUC detects
 class="math inline">&lt;0</span>); “ex-null” excludes the no-edge
 regime. Bold marks the best diagnostic per column (the null column is
 statistically indistinguishable from zero throughout).</caption>
-<thead>
-<tr>
-<th style="text-align: left;"></th>
-<th colspan="6" style="text-align: center;">Spearman <span
-class="math inline">\rho</span> vs. true forward Sharpe</th>
-<th style="text-align: center;"></th>
-</tr>
-</thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><span>2-7</span> Diagnostic</td>
+<td style="text-align: left;"></td>
+<td colspan="6" style="text-align: center;">Spearman <span
+class="math inline">\rho</span> vs. true forward Sharpe</td>
+<td style="text-align: center;"></td>
+</tr>
+<tr>
+<td style="text-align: left;">Diagnostic</td>
 <td style="text-align: center;">overall</td>
 <td style="text-align: center;">station.</td>
 <td style="text-align: center;">drift</td>
@@ -645,7 +643,7 @@ class="math inline">\to</span>OOS rank correlation (<span
 class="math inline">\rho = 0.516</span>, and the best per-regime
 correlations under stationarity and drift). The mechanism is visible in
 <a href="#eq:norm" data-reference-type="eqref"
-data-reference="eq:norm">[eq:norm]</a>: the ratio’s numerator is
+data-reference="eq:norm">(norm)</a>: the ratio’s numerator is
 essentially the stitched OOS mean, which carries the forward-relevant
 information; the denominator is the selection-<em>inflated</em> IS mean,
 which is noisy and nearly uninformative about the future, so dividing by
@@ -653,7 +651,7 @@ it mostly injects noise. Consistent with this, the two WFER variants
 rank runs almost identically (<span class="math inline">\rho =
 0.451</span> vs. <span class="math inline">0.447</span>): within a run
 the normalization <a href="#eq:norm" data-reference-type="eqref"
-data-reference="eq:norm">[eq:norm]</a> is a constant factor, so ranking
+data-reference="eq:norm">(norm)</a> is a constant factor, so ranking
 is barely affected—what the normalization changes is the
 <em>location</em> of the distribution relative to fixed thresholds,
 which is exactly where the raw form fails (Section <a
@@ -713,18 +711,15 @@ no-edge-regime runs in the bin. Four runs with non-positive IS PnL,
 where the ratio is ill-defined (all null-regime, all losers), are
 excluded. The <span class="math inline">&lt;0</span> rows coincide
 because the two variants share the sign of the ratio.</caption>
-<thead>
-<tr>
-<th style="text-align: left;"></th>
-<th colspan="4" style="text-align: center;">Normalized WFER</th>
-<th colspan="4" style="text-align: center;">Raw WFER (literal
-formula)</th>
-</tr>
-</thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><span>2-5</span>(lr)<span>6-9</span>
-Bin</td>
+<td style="text-align: left;"></td>
+<td colspan="4" style="text-align: center;">Normalized WFER</td>
+<td colspan="4" style="text-align: center;">Raw WFER (literal
+formula)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Bin</td>
 <td style="text-align: right;"><span class="math inline">n</span></td>
 <td style="text-align: center;">mean fwd SR</td>
 <td style="text-align: center;">loser</td>
@@ -847,7 +842,7 @@ majority losers (<span class="math inline">56.5\%</span>).</p>
 <h4 id="raw-reading-the-thresholds-are-unreachable.">Raw reading: the
 thresholds are unreachable.</h4>
 <p>Under the literal PnL-sum formula <a href="#eq:raw"
-data-reference-type="eqref" data-reference="eq:raw">[eq:raw]</a>, <span
+data-reference-type="eqref" data-reference="eq:raw">(raw)</a>, <span
 class="math inline">74\%</span> of positive-IS runs land in <span
 class="math inline">0</span>–<span class="math inline">0.3</span> and
 only <span class="math inline">6</span> of <span
@@ -903,7 +898,7 @@ statistical significance, most walk-forward runs contain at least one
 window whose efficiency reading is built on a denominator
 indistinguishable from zero.</p>
 <p>The aggregate ratio <a href="#eq:norm" data-reference-type="eqref"
-data-reference="eq:norm">[eq:norm]</a> is better protected—only <span
+data-reference="eq:norm">(norm)</a> is better protected—only <span
 class="math inline">0.46\%</span> of runs have <span
 class="math inline">|\overline{\mathrm{IS}}|</span> within one standard
 error of zero (<span class="math inline">1.6\%</span> of null)—but where
@@ -1054,18 +1049,15 @@ overall, drift, break) and Spearman correlation with the forward truth.
 Anchored and CPCV-lite deploy the same configuration (full-history
 argmax) by construction, hence identical forward columns. Bold marks the
 best per column.</caption>
-<thead>
-<tr>
-<th style="text-align: left;"></th>
-<th colspan="4" style="text-align: center;">True forward Sharpe
-(deployed)</th>
-<th colspan="4" style="text-align: center;">Validation estimate</th>
-</tr>
-</thead>
 <tbody>
 <tr>
-<td style="text-align: left;"><span>2-5</span>(lr)<span>6-9</span>
-Procedure</td>
+<td style="text-align: left;"></td>
+<td colspan="4" style="text-align: center;">True forward Sharpe
+(deployed)</td>
+<td colspan="4" style="text-align: center;">Validation estimate</td>
+</tr>
+<tr>
+<td style="text-align: left;">Procedure</td>
 <td style="text-align: center;">overall</td>
 <td style="text-align: center;">station.</td>
 <td style="text-align: center;">drift</td>
@@ -1225,7 +1217,7 @@ and for anchored folds), because it uses the whole <span
 class="math inline">\theta</span>-cross-section per fold instead of one
 selected point. If a ratio must be reported, it should be the per-period
 normalized form <a href="#eq:norm" data-reference-type="eqref"
-data-reference="eq:norm">[eq:norm]</a>, accompanied by a check that the
+data-reference="eq:norm">(norm)</a>, accompanied by a check that the
 IS denominator is statistically distinguishable from zero—a check that
 fails somewhere in most runs at conventional significance (Section <a
 href="#sec:illcond" data-reference-type="ref"
