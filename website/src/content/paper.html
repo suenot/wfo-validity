@@ -1,0 +1,1475 @@
+<h1 id="introduction">Introduction</h1>
+<p>The standard validation ritual of systematic trading is
+<em>walk-forward optimization</em> (WFO): optimize the strategy’s
+parameters on an in-sample (IS) window, evaluate the selected
+configuration on the immediately following out-of-sample (OOS) segment,
+roll the window forward, and stitch the OOS segments into a single
+pseudo-live track record <span class="citation"
+data-cites="pardo1992design pardo2008evaluation tomasini2009trading">(Pardo
+1992, 2008; Tomasini and Jaekle 2009)</span>. Its acceptance statistic
+is the <em>walk-forward efficiency</em> of <span class="citation"
+data-cites="pardo2008evaluation">Pardo (2008)</span>: the ratio of OOS
+to IS performance, near one when the optimization captured persistent
+structure and near zero when it curve-fit noise. The statistic is
+embedded in commercial tooling—TradeStation’s Walk-Forward Optimizer
+fails any strategy whose walk-forward efficiency falls below <span
+class="math inline">50\%</span> <span class="citation"
+data-cites="tradestation_wfo">(TradeStation Technologies,
+n.d.)</span>—and around it has grown an informal grading folklore:
+ratios above <span class="math inline">{\sim}0.8</span> signal
+robustness, <span class="math inline">0.5</span> marks the pass/fail
+boundary, and values below <span class="math inline">{\sim}0.3</span>
+indicate overfitting. In circulating recipes the ratio is often computed
+literally as summed OOS PnL over summed IS PnL, and read both in
+aggregate and window by window.<a href="#fn1" class="footnote-ref"
+id="fnref1" role="doc-noteref"><sup>1</sup></a></p>
+<p>None of this folklore has, to our knowledge, been measured where the
+truth is known. Does the walk-forward efficiency ratio (WFER) actually
+predict forward performance—and better than what alternative? Do the
+thresholds correspond to calibrated decision boundaries? Should the IS
+window be anchored (expanding) or rolling, and how finely should the
+history be partitioned into folds? The academic literature rigorously
+treats adjacent problems—backtest overfitting <span class="citation"
+data-cites="bailey2014pseudomathematics bailey2017probability">(Bailey
+et al. 2014, 2017)</span>, data snooping <span class="citation"
+data-cites="white2000reality">(White 2000)</span>, splitting schemes for
+dependent data <span class="citation"
+data-cites="bergmeir2012use lopezdeprado2018advances">(Bergmeir and
+Benítez 2012; López de Prado 2018)</span>—but the WFE ratio itself, the
+statistic practitioners actually gate deployments on, has remained
+untested.</p>
+<p>We provide that test in a controlled simulation. A one-parameter
+strategy family has a population annualized-Sharpe surface that we
+control exactly, including how its optimum moves through time: it can
+stay put (stationary), drift linearly, jump at a structural break, or
+not exist at all (a no-edge null). Because the surface is known, the
+true expected Sharpe of deploying <em>any</em> configuration over a
+future horizon is computable exactly, and every validation procedure—and
+every diagnostic it emits—can be judged against that ground truth. Our
+findings are deliberately mixed: the ratio is genuinely informative yet
+strictly dominated by simpler statistics computed from the very same
+folds; its thresholds fail in two distinct ways; and the window-design
+folklore is directionally right at an unstated price.</p>
+<h4 id="contributions.">Contributions.</h4>
+<ol>
+<li><p>A reproducible framework in which walk-forward validation is run
+against a known, <em>time-varying</em> Sharpe surface under four regimes
+(stationary, drift, break, null), with five procedures evaluated on the
+same simulated histories and the forward truth of every deployment
+computed exactly: <span class="math inline">8{,}000</span> main
+experiments evaluating all five procedures, plus a <span
+class="math inline">9{,}000</span>-run window-design sweep of the
+rolling procedure (Sections <a href="#sec:framework"
+data-reference-type="ref" data-reference="sec:framework">4</a>–<a
+href="#sec:setup" data-reference-type="ref"
+data-reference="sec:setup">5</a>).</p></li>
+<li><p>The first operating characteristics of the WFER. It carries
+signal (Spearman <span class="math inline">\rho=0.451</span> against
+true forward Sharpe; AUC <span class="math inline">0.743</span> for
+detecting deployed losers) but is dominated, on every regime with an
+edge, by the stitched OOS <span class="math inline">t</span>-statistic
+(AUC <span class="math inline">0.781</span>) and OOS Sharpe (<span
+class="math inline">\rho=0.529</span>) computed from the same folds; and
+its per-window form is ill-conditioned in <span
+class="math inline">21.4\%</span> of runs (<span
+class="math inline">47.3\%</span> under the null) (Sections <a
+href="#sec:informative" data-reference-type="ref"
+data-reference="sec:informative">6.1</a> and <a href="#sec:illcond"
+data-reference-type="ref"
+data-reference="sec:illcond">6.3</a>).</p></li>
+<li><p>A calibration of the folk thresholds. The <span
+class="math inline">\ge 0.8</span> bin is indistinguishable from <span
+class="math inline">0.5</span>–<span class="math inline">0.8</span>
+(mean forward Sharpe <span class="math inline">0.980</span> vs. <span
+class="math inline">0.994</span>); the “borderline/overfit” zone below
+<span class="math inline">0.5</span> contains configurations averaging
+<span class="math inline">+0.59</span> to <span
+class="math inline">+0.83</span>; and the literal raw-PnL ratio cannot
+reach its own thresholds (<span class="math inline">6</span> of <span
+class="math inline">8{,}000</span> runs at <span
+class="math inline">{\ge}0.5</span>), because it compares accumulation
+windows of different lengths (Section <a href="#sec:thresholds"
+data-reference-type="ref"
+data-reference="sec:thresholds">6.2</a>).</p></li>
+<li><p>A paired anchored-vs.-rolling comparison on identical OOS
+segments: anchored wins under stationarity (<span
+class="math inline">+0.100</span> forward Sharpe, <span
+class="math inline">p\approx2\times10^{-39}</span>), rolling under drift
+(<span class="math inline">+0.079</span>) and breaks (<span
+class="math inline">+0.154</span>)—the folklore direction, with a
+stationarity cost the folklore does not state (Section <a
+href="#sec:avr" data-reference-type="ref"
+data-reference="sec:avr">6.4</a>).</p></li>
+<li><p>A window-design sweep and a five-procedure ranking showing that
+window length shapes mainly the <em>estimate</em> (diagnostic–forward
+correlation peaks at <span class="math inline">0.52</span> near nine
+folds, collapses to <span class="math inline">0.23</span> at one fold),
+not the deployment (flat for train length <span
+class="math inline">{\ge}126</span>); that rolling WFO deploys best
+(<span class="math inline">0.657</span>) while naive shuffled <span
+class="math inline">k</span>-fold is the most optimistic estimator
+(<span class="math inline">+0.083</span> bias, worse under drift and
+breaks); and that CPCV-lite’s estimate ranks outcomes best (<span
+class="math inline">\rho=0.636</span>) (Sections <a href="#sec:window"
+data-reference-type="ref" data-reference="sec:window">6.5</a>–<a
+href="#sec:ranking" data-reference-type="ref"
+data-reference="sec:ranking">6.6</a>).</p></li>
+</ol>
+<h1 id="sec:related">Related work</h1>
+<h4
+id="walk-forward-optimization-and-the-efficiency-ratio.">Walk-forward
+optimization and the efficiency ratio.</h4>
+<p>Walk-forward analysis originates in the practitioner literature on
+trading-system development. <span class="citation"
+data-cites="pardo1992design">Pardo (1992)</span> introduced the
+procedure of repeatedly optimizing a strategy’s parameters on an IS
+window and evaluating the selected configuration on the immediately
+following OOS segment, stitching the OOS segments into a single
+pseudo-live track record. The substantially revised second edition <span
+class="citation" data-cites="pardo2008evaluation">(Pardo 2008)</span>
+systematized the methodology and proposed the <em>walk-forward
+efficiency</em> (WFE)—the ratio of annualized OOS performance to
+annualized IS performance—as the central diagnostic of whether an
+optimization captured persistent structure or merely curve-fit noise.
+Practitioner texts adopted the procedure essentially unchanged <span
+class="citation" data-cites="tomasini2009trading">(Tomasini and Jaekle
+2009)</span>, and it is now embedded in retail and institutional
+tooling: TradeStation’s Walk-Forward Optimizer, for example, fails any
+strategy whose WFE falls below <span class="math inline">50\%</span>
+under its default test criteria <span class="citation"
+data-cites="tradestation_wfo">(TradeStation Technologies, n.d.)</span>.
+Around this default has grown an informal grading folklore—ratios near
+<span class="math inline">0.8</span> signal robustness, <span
+class="math inline">0.5</span> marks the pass/fail boundary, and values
+below roughly <span class="math inline">0.3</span> indicate
+overfitting—that circulates in platform documentation, trading courses,
+and blogs without any traceable empirical validation. To our knowledge,
+no published study has measured the operating characteristics of the WFE
+ratio (its sampling distribution, its correlation with true forward
+performance, or the error rates implied by these thresholds) in a
+setting where the ground truth is known. Nor has the practitioner
+literature resolved basic design questions it raises only heuristically:
+anchored versus rolling in-sample windows, and how finely the history
+should be partitioned into walk-forward folds.</p>
+<h4 id="backtest-overfitting-and-multiple-testing.">Backtest overfitting
+and multiple testing.</h4>
+<p>A parallel academic literature has quantified how easily backtests
+mislead. <span class="citation"
+data-cites="bailey2014pseudomathematics">Bailey et al. (2014)</span>
+showed that the expected maximum Sharpe ratio over <span
+class="math inline">N</span> random configurations grows without bound,
+so impressive IS results are nearly guaranteed given enough trials.
+<span class="citation" data-cites="bailey2017probability">Bailey et al.
+(2017)</span> formalized the <em>probability of backtest
+overfitting</em> (PBO) via combinatorially symmetric cross-validation
+(CSCV), which evaluates whether configurations selected in-sample
+systematically underperform out-of-sample. <span class="citation"
+data-cites="bailey2014deflated">Bailey and López de Prado (2014)</span>
+derived the deflated Sharpe ratio, which corrects observed performance
+for the number of trials and non-normality, and <span class="citation"
+data-cites="harvey2015backtesting">Harvey and Liu (2015)</span> proposed
+multiple-testing haircuts to reported Sharpe ratios; <span
+class="citation" data-cites="arnott2019backtesting">Arnott et al.
+(2019)</span> distilled these concerns into a research protocol for the
+machine-learning era. This line of work descends from the data-snooping
+literature in econometrics: <span class="citation"
+data-cites="white2000reality">White (2000)</span> introduced the Reality
+Check for testing whether the best of many models beats a benchmark
+after accounting for the search, and <span class="citation"
+data-cites="hansen2005test">Hansen (2005)</span> sharpened it into the
+more powerful Superior Predictive Ability test. These tools diagnose
+selection bias <em>given</em> a backtesting protocol; they do not tell
+us whether walk-forward validation itself—the protocol practitioners
+actually use to combat overfitting—produces forward-performance
+estimates that can be trusted, nor how its diagnostic ratio behaves
+under regime change.</p>
+<h4 id="cross-validation-for-dependent-data.">Cross-validation for
+dependent data.</h4>
+<p>A third strand asks how predictive accuracy should be estimated for
+time series at all. <span class="citation"
+data-cites="tashman2000outofsample">Tashman (2000)</span> reviewed
+out-of-sample evaluation designs—fixed versus rolling origins, window
+updating, single versus multiple test periods—and noted how sensitive
+conclusions are to these choices. <span class="citation"
+data-cites="bergmeir2012use">Bergmeir and Benítez (2012)</span> compared
+blocked and standard cross-validation against last-block evaluation for
+machine-learning predictors, finding cross-validation often yields more
+robust model selection; <span class="citation"
+data-cites="bergmeir2018note">Bergmeir et al. (2018)</span> proved that
+standard <span class="math inline">k</span>-fold cross-validation
+remains valid for purely autoregressive models with uncorrelated errors.
+Conversely, <span class="citation"
+data-cites="cerqueira2020evaluating">Cerqueira et al. (2020)</span>
+found empirically that out-of-sample (forward) procedures are more
+reliable than cross-validation when series are non-stationary. In
+finance, <span class="citation"
+data-cites="lopezdeprado2018advances">López de Prado (2018)</span>
+argued that naive <span class="math inline">k</span>-fold leaks
+information through overlapping and serially correlated labels,
+proposing purged <span class="math inline">k</span>-fold and
+combinatorial purged cross-validation (CPCV) as alternatives that
+generate many backtest paths. This debate concerns <em>splitting
+schemes</em> and the bias of error estimates; the WFE ratio—a statistic
+computed on top of a splitting scheme and an optimization step—has
+remained outside its scope.</p>
+<h4
+id="in-sample-versus-out-of-sample-tests-and-window-choice.">In-sample
+versus out-of-sample tests and window choice.</h4>
+<p>Econometricians have long questioned the primacy of OOS evidence.
+<span class="citation" data-cites="inoue2005insample">Inoue and Kilian
+(2005)</span> showed that in-sample and out-of-sample predictability
+tests are equally reliable under the null, and that sample-splitting
+sacrifices power, so insisting on OOS confirmation is not a free lunch.
+<span class="citation" data-cites="rossi2012outofsample">Rossi and Inoue
+(2012)</span> demonstrated that OOS conclusions can hinge on the
+arbitrary choice of estimation-window size and proposed tests robust to
+that choice, while <span class="citation"
+data-cites="inoue2017rolling">Inoue et al. (2017)</span> derived optimal
+rolling-window sizes when parameters drift—directly relevant to the
+anchored-versus-rolling question in walk-forward design. The survey of
+<span class="citation" data-cites="rossi2013exchange">Rossi
+(2013)</span> documents pervasive model instability as a central fact of
+predictive finance. These results imply that walk-forward outcomes are
+functions of window design in ways practitioners rarely acknowledge, but
+the literature evaluates forecast accuracy tests, not
+parameter-selection pipelines with a WFE-style acceptance rule.</p>
+<h4 id="positioning.">Positioning.</h4>
+<p>In sum, walk-forward optimization is the de facto standard validation
+protocol in systematic trading, and the walk-forward efficiency ratio is
+its de facto acceptance statistic—yet both live almost entirely in
+practitioner folklore. The academic literature offers rigorous tools for
+adjacent problems: detecting data snooping <span class="citation"
+data-cites="white2000reality hansen2005test">(White 2000; Hansen
+2005)</span>, quantifying backtest overfitting <span class="citation"
+data-cites="bailey2017probability bailey2014deflated">(Bailey et al.
+2017; Bailey and López de Prado 2014)</span>, and choosing splitting
+schemes for dependent data <span class="citation"
+data-cites="bergmeir2012use lopezdeprado2018advances cerqueira2020evaluating">(Bergmeir
+and Benítez 2012; López de Prado 2018; Cerqueira et al. 2020)</span>.
+None of it validates the WFE ratio against a known ground truth, tests
+the <span class="math inline">0.8/0.5/0.3</span> folk thresholds, or
+compares anchored and rolling walk-forward against purged
+cross-validation under controlled stationarity, drift, and structural
+breaks. This paper fills that gap with a simulation study in which the
+true, time-varying Sharpe surface is known by construction, so the
+predictive value of every diagnostic can be measured exactly.</p>
+<h1 id="sec:wfer">The efficiency ratio and the validation
+procedures</h1>
+<h4 id="setting.">Setting.</h4>
+<p>A strategy family is indexed by a parameter <span
+class="math inline">\theta</span> on a grid in <span
+class="math inline">[0,1]</span>. A validation procedure partitions a
+history of <span class="math inline">T_{\mathrm{hist}}</span> periods
+into folds <span class="math inline">j=1,\dots,J</span>, each with a
+train window <span class="math inline">W_j^{\mathrm{tr}}</span> and a
+test window <span class="math inline">W_j^{\mathrm{te}}</span>. Within
+each fold the selection rule is fixed throughout this paper: <span
+class="math inline">\hat\theta_j = \arg\max_\theta
+\widehat{\mathrm{SR}}(\theta;
+W_j^{\mathrm{tr}})</span>, the argmax of the annualized train-window
+Sharpe. Let <span class="math inline">I_j</span> and <span
+class="math inline">O_j</span> be the summed PnL of <span
+class="math inline">\hat\theta_j</span> over <span
+class="math inline">W_j^{\mathrm{tr}}</span> and <span
+class="math inline">W_j^{\mathrm{te}}</span>, and let <span
+class="math inline">N_{\mathrm{IS}}=\sum_j |W_j^{\mathrm{tr}}|</span>,
+<span class="math inline">N_{\mathrm{OOS}}=\sum_j
+|W_j^{\mathrm{te}}|</span>.</p>
+<h4 id="two-readings-of-the-ratio.">Two readings of the ratio.</h4>
+<p>The literal practitioner formula is the <em>raw</em> ratio of PnL
+sums, <span class="math display">\begin{equation}
+\mathrm{WFER}_{\mathrm{raw}} \;=\; \frac{\sum_j O_j}{\sum_j I_j},
+\label{eq:raw}
+\end{equation}</span> while Pardo’s annualized-to-annualized definition
+corresponds to the <em>per-period normalized</em> form <span
+class="math display">\begin{equation}
+\mathrm{WFER}_{\mathrm{norm}} \;=\;
+\frac{\sum_j O_j / N_{\mathrm{OOS}}}{\sum_j I_j / N_{\mathrm{IS}}}
+\;=\;
+\frac{N_{\mathrm{IS}}}{N_{\mathrm{OOS}}}\,\mathrm{WFER}_{\mathrm{raw}}.
+\label{eq:norm}
+\end{equation}</span> The distinction is not cosmetic. In walk-forward
+practice the IS windows are several times longer than the OOS windows
+(three to four times in our designs), so <a href="#eq:raw"
+data-reference-type="eqref" data-reference="eq:raw">[eq:raw]</a> divides
+PnL accumulated over very different amounts of time: even a perfectly
+persistent edge scores <span
+class="math inline">\mathrm{WFER}_{\mathrm{raw}} \approx
+N_{\mathrm{OOS}}/N_{\mathrm{IS}} \approx
+0.25</span>–<span class="math inline">0.33</span>. The normalized form
+<a href="#eq:norm" data-reference-type="eqref"
+data-reference="eq:norm">[eq:norm]</a> is the only reading under which
+the folk thresholds (<span class="math inline">\ge 0.8</span>
+“excellent,” <span class="math inline">0.5</span>–<span
+class="math inline">0.8</span> “acceptable,” <span
+class="math inline">0.3</span>–<span class="math inline">0.5</span>
+“borderline,” <span class="math inline">&lt;0.3</span> “overfit,” <span
+class="math inline">&lt;0</span> “unprofitable”) can even potentially be
+meaningful; Section <a href="#sec:thresholds" data-reference-type="ref"
+data-reference="sec:thresholds">6.2</a> quantifies what happens when
+they are applied to either form. Both forms are undefined when <span
+class="math inline">\sum_j I_j \le 0</span> (the implicit assumption of
+the grading table is a positive IS denominator), and the per-window
+variant <span class="math inline">O_j/I_j</span> is ill-conditioned
+whenever a single <span class="math inline">I_j</span> is near zero
+(Section <a href="#sec:illcond" data-reference-type="ref"
+data-reference="sec:illcond">6.3</a>).</p>
+<h4 id="five-procedures.">Five procedures.</h4>
+<p>We evaluate five ways of building the folds, all sharing the
+selection rule above (Figure <a href="#fig:setup"
+data-reference-type="ref" data-reference="fig:setup">1</a>, bottom):</p>
+<ul>
+<li><p><strong>Single split</strong>: one fold; the last <span
+class="math inline">25</span>–<span class="math inline">35\%</span> of
+the history is held out. Deploys the argmax of the train
+portion.</p></li>
+<li><p><strong>Anchored WFO</strong>: expanding train window from the
+start of history; aligned OOS segments of length <span
+class="math inline">L_{\mathrm{test}}</span> starting at <span
+class="math inline">L_{\mathrm{train}}</span>. Deploys the argmax over
+the full history (its last expanding window, extended to the
+end).</p></li>
+<li><p><strong>Rolling WFO</strong>: train window of fixed length <span
+class="math inline">L_{\mathrm{train}}</span> ending where each OOS
+segment begins; the step equals <span
+class="math inline">L_{\mathrm{test}}</span>, so OOS segments tile the
+history without overlap and anchored/rolling share <em>identical</em>
+test segments—their comparison is paired on the same data. Deploys the
+argmax over the most recent <span
+class="math inline">L_{\mathrm{train}}</span> periods.</p></li>
+<li><p><strong>Naive shuffled <span
+class="math inline">k</span>-fold</strong>: the deliberately time-blind
+baseline; <span class="math inline">k=5</span> shuffled folds. Deploys
+the textbook CV selection: argmax of the mean per-fold test
+Sharpe.</p></li>
+<li><p><strong>CPCV-lite</strong>: a documented simplification of
+combinatorial purged cross-validation <span class="citation"
+data-cites="lopezdeprado2018advances">(López de Prado 2018)</span>: the
+history is cut into <span class="math inline">6</span> contiguous
+groups, every <span class="math inline">\binom{6}{2}=15</span> choice of
+<span class="math inline">2</span> test groups forms a fold, and an
+embargo of <span class="math inline">10</span> periods is dropped from
+the train set at each test-group boundary. We call it “lite”
+deliberately: in our generative model returns are serially independent
+given the surface, so there are no overlapping labels to purge; the
+embargo mirrors the procedure as practiced rather than removing genuine
+leakage. (CPCV is distinct from the CSCV scheme of <span
+class="citation" data-cites="bailey2017probability">Bailey et al.
+(2017)</span>, which underlies PBO.) Deploys the argmax over the full
+history, per the final-fit convention.</p></li>
+</ul>
+<h4 id="diagnostics.">Diagnostics.</h4>
+<p>From each procedure’s folds we record the two WFER variants <a
+href="#eq:raw" data-reference-type="eqref"
+data-reference="eq:raw">[eq:raw]</a>–<a href="#eq:norm"
+data-reference-type="eqref" data-reference="eq:norm">[eq:norm]</a> and
+five simpler statistics computed from the same raw material: the
+<em>stitched OOS Sharpe</em> (annualized Sharpe of the concatenated
+test-window returns of the per-fold selections), the <em>OOS <span
+class="math inline">t</span>-statistic</em> (<span
+class="math inline">\bar r_{\mathrm{OOS}}/s_{\mathrm{OOS}}\cdot
+\sqrt{N_{\mathrm{OOS}}}</span>), the mean per-fold <em>IS<span
+class="math inline">\to</span>OOS rank correlation</em> (Spearman
+correlation across <span class="math inline">\theta</span> between
+train-window and test-window Sharpe), the <em>fold win rate</em>
+(fraction of folds with <span class="math inline">O_j&gt;0</span>), and
+the <em><span class="math inline">\theta</span>-instability</em>
+(standard deviation of the selected <span
+class="math inline">\hat\theta_j</span> across folds, in <span
+class="math inline">[0,1]</span> units; the folklore reads unstable
+selections as a warning sign, so it enters orientation-flipped).</p>
+<h1 id="sec:framework">Simulation framework</h1>
+<figure id="fig:setup" data-latex-placement="t">
+<img src="/figures/fig_setup.svg" />
+<figcaption>The generative model and the procedures. <em>Top:</em> the
+true annualized-Sharpe surface <span
+class="math inline">\mathrm{SR}_{\mathrm{true}}(\theta,t)</span> (color)
+for one canonical configuration of each regime; the dashed line is the
+moving optimum <span class="math inline">c(t)</span> and the vertical
+line marks the end of the <span class="math inline">756</span>-period
+history—everything to its right is the <span
+class="math inline">252</span>-period forward horizon on which
+deployments are judged. <em>Bottom:</em> train (blue) and test (red)
+windows of four procedures on one <span
+class="math inline">756</span>-period history with <span
+class="math inline">L_{\mathrm{train}}=252</span>, <span
+class="math inline">L_{\mathrm{test}}=63</span>: anchored WFO (8
+expanding folds), rolling WFO (8 fixed-length folds on the same test
+segments), shuffled <span class="math inline">5</span>-fold
+(interleaved, time-blind), and CPCV-lite (first 8 of its 15 group
+combinations; embargoed gaps visible at test-group
+boundaries).</figcaption>
+</figure>
+<h4 id="a-known-time-varying-sharpe-surface.">A known, time-varying
+Sharpe surface.</h4>
+<p>Each experiment draws a population surface over the parameter grid,
+<span class="math display">\begin{equation}
+\mathrm{SR}_{\mathrm{true}}(\theta,t) \;=\;
+\mathrm{clip}_{\pm 4}\!\left[\, b \;+\; A
+\exp\!\left(-\frac{(\theta - c(t))^2}{2 w^2}\right)\right],
+\label{eq:surface}
+\end{equation}</span> a Gaussian bump of amplitude <span
+class="math inline">A</span> and width <span
+class="math inline">w</span> on a floor <span
+class="math inline">b</span>, whose center <span
+class="math inline">c(t)</span> moves according to the regime:
+<em>stationary</em> (<span class="math inline">c(t)=c_0</span>
+throughout), <em>drift</em> (<span class="math inline">c(t)</span> moves
+linearly from <span class="math inline">c_0</span> to <span
+class="math inline">c_1</span> across history plus forward horizon),
+<em>break</em> (<span class="math inline">c(t)=c_0</span> until a
+sampled break time inside the history, then jumps to <span
+class="math inline">c_1</span>), and <em>null</em> (<span
+class="math inline">A=0</span> with a non-positive floor: nothing to
+find). Per-period returns at each grid point carry a shared market
+factor, <span class="math display">\begin{equation}
+r_t(\theta) \;=\; \frac{\mathrm{SR}_{\mathrm{true}}(\theta,t)}{\sqrt{P}}
+\;+\; \sqrt{\phi}\,F_t \;+\; \sqrt{1-\phi}\,\varepsilon_t(\theta),
+\qquad P = 252,
+\label{eq:returns}
+\end{equation}</span> with <span class="math inline">F_t</span> and
+<span class="math inline">\varepsilon_t(\theta)</span> standard normal,
+so each column has unit per-period variance, the population annualized
+Sharpe at time <span class="math inline">t</span> equals <span
+class="math inline">\mathrm{SR}_{\mathrm{true}}(\theta,t)</span>, and
+nearby strategies co-move with factor share <span
+class="math inline">\phi</span>—the cross-sectional structure
+walk-forward folds actually face.</p>
+<h4 id="ground-truth.">Ground truth.</h4>
+<p>Because the surface is known, the true expected annualized Sharpe of
+deploying any <span class="math inline">\theta</span> over the forward
+horizon is the time-average <span class="math display">\begin{equation}
+\mathrm{SR}_{\mathrm{fwd}}(\theta) \;=\; \frac{1}{T_{\mathrm{fwd}}}
+\sum_{t=T_{\mathrm{hist}}}^{T_{\mathrm{hist}}+T_{\mathrm{fwd}}-1}
+\mathrm{SR}_{\mathrm{true}}(\theta,t)
+\label{eq:fwd}
+\end{equation}</span> (the <span
+class="math inline">O(\mathrm{SR}^2/P)</span> variance contribution of a
+moving mean is negligible at these Sharpe levels). Every procedure is
+scored on <span
+class="math inline">\mathrm{SR}_{\mathrm{fwd}}(\hat\theta_{\mathrm{deploy}})</span>
+of the configuration it would put into production; a run <em>deployed a
+loser</em> if that value is negative, and its <em>regret</em> is the gap
+to the forward-optimal <span class="math inline">\max_\theta
+\mathrm{SR}_{\mathrm{fwd}}(\theta)</span>.</p>
+<h4 id="sampled-design.">Sampled design.</h4>
+<p>Every constant that affects results is either disclosed here or
+recorded per experiment; there are no hidden constants. Each run
+independently draws: grid size <span class="math inline">n_\theta \in
+\{25, 31, 41\}</span>; history length <span
+class="math inline">T_{\mathrm{hist}} \in \{504, 756, 1008\}</span> with
+forward horizon <span class="math inline">T_{\mathrm{fwd}} = 252</span>
+fixed; amplitude <span class="math inline">A \sim U(0.4, 2.0)</span>
+(zero for null); width <span class="math inline">w \sim U(0.10,
+0.35)</span>; floor <span class="math inline">b \sim U(-0.2, 0.2)</span>
+(null: <span class="math inline">b \sim U(-0.10, 0)</span>); initial
+center <span class="math inline">c_0 \sim U(0.25, 0.75)</span>; for
+drift and break, a shift of magnitude <span class="math inline">U(0.2,
+0.5)</span> in a random direction with <span
+class="math inline">c_1</span> clipped to <span
+class="math inline">[0.05, 0.95]</span>; break time <span
+class="math inline">U(0.3, 0.9)</span> as a fraction of the history;
+factor share <span class="math inline">\phi \sim U(0.05, 0.5)</span>.
+Window design follows the practitioner rules of thumb the recipe itself
+prescribes: train length a sampled fraction <span
+class="math inline">\{0.2, 0.3, 0.4, 0.5\}</span> of the history, test
+length <span class="math inline">1/4</span> or <span
+class="math inline">1/3</span> of train (minimum <span
+class="math inline">21</span>), step equal to the test length (so OOS
+segments never overlap, and consecutive rolling train windows overlap by
+<span class="math inline">67</span>–<span
+class="math inline">75\%</span>); the single split holds out a fraction
+<span class="math inline">\{0.25, 0.30, 0.35\}</span>; <span
+class="math inline">k</span>-fold uses <span
+class="math inline">k=5</span>; CPCV-lite uses <span
+class="math inline">6</span> groups, <span class="math inline">2</span>
+test groups, embargo <span class="math inline">10</span>.</p>
+<h1 id="sec:setup">Experimental setup</h1>
+<p>The main batch runs <span class="math inline">8{,}000</span>
+experiments with regimes cycled for exactly <span
+class="math inline">2{,}000</span> per regime, master seed <span
+class="math inline">101</span> spawned into independent per-run
+generators. Within each run, <em>all five procedures see the same
+simulated history</em>, so every cross-procedure comparison is paired.
+The window-design sweep holds <span
+class="math inline">T_{\mathrm{hist}} = 756</span> fixed and forces the
+rolling train length across <span class="math inline">\{63, 126, 189,
+252, 378, 504\}</span> with test length <span
+class="math inline">\max(21, L_{\mathrm{train}}/3)</span>, <span
+class="math inline">1{,}500</span> runs per cell (<span
+class="math inline">9{,}000</span> total; seed <span
+class="math inline">303</span>), tracing the fold count from <span
+class="math inline">33</span> down to <span
+class="math inline">1</span>. Everything is deterministic given the two
+seeds; no number in this paper depends on wall-clock or unseeded
+state.</p>
+<h1 id="results">Results</h1>
+<h2 id="sec:informative">WFER is informative—and dominated by simpler
+statistics from the same folds</h2>
+<div id="tab:diag">
+<table>
+<caption>Diagnostic quality of validation statistics computed from the
+rolling walk-forward folds, judged against the true forward Sharpe of
+the deployed configuration (<span class="math inline">n=8{,}000</span>;
+<span class="math inline">2{,}000</span> per regime). <span
+class="math inline">\rho</span> is the Spearman rank correlation
+(orientation-aligned: <span
+class="math inline">\theta</span>-instability enters with a negative
+sign); all overall <span class="math inline">\rho</span> have <span
+class="math inline">p</span> below machine precision. AUC detects
+“deployed a loser” (forward Sharpe <span
+class="math inline">&lt;0</span>); “ex-null” excludes the no-edge
+regime. Bold marks the best diagnostic per column (the null column is
+statistically indistinguishable from zero throughout).</caption>
+<thead>
+<tr>
+<th style="text-align: left;"></th>
+<th colspan="6" style="text-align: center;">Spearman <span
+class="math inline">\rho</span> vs. true forward Sharpe</th>
+<th style="text-align: center;"></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><span>2-7</span> Diagnostic</td>
+<td style="text-align: center;">overall</td>
+<td style="text-align: center;">station.</td>
+<td style="text-align: center;">drift</td>
+<td style="text-align: center;">break</td>
+<td style="text-align: center;">null</td>
+<td style="text-align: center;">ex-null</td>
+<td style="text-align: center;">AUC</td>
+</tr>
+<tr>
+<td style="text-align: left;">Normalized WFER</td>
+<td style="text-align: center;">0.451</td>
+<td style="text-align: center;">0.387</td>
+<td style="text-align: center;">0.365</td>
+<td style="text-align: center;">0.260</td>
+<td style="text-align: center;"><span
+class="math inline">0.022</span></td>
+<td style="text-align: center;">0.338</td>
+<td style="text-align: center;">0.743</td>
+</tr>
+<tr>
+<td style="text-align: left;">Raw WFER</td>
+<td style="text-align: center;">0.447</td>
+<td style="text-align: center;">0.381</td>
+<td style="text-align: center;">0.360</td>
+<td style="text-align: center;">0.257</td>
+<td style="text-align: center;"><span
+class="math inline">0.021</span></td>
+<td style="text-align: center;">0.333</td>
+<td style="text-align: center;">0.742</td>
+</tr>
+<tr>
+<td style="text-align: left;">Stitched OOS Sharpe</td>
+<td style="text-align: center;">0.529</td>
+<td style="text-align: center;">0.469</td>
+<td style="text-align: center;">0.435</td>
+<td style="text-align: center;">0.320</td>
+<td style="text-align: center;"><span
+class="math inline">0.017</span></td>
+<td style="text-align: center;">0.408</td>
+<td style="text-align: center;">0.779</td>
+</tr>
+<tr>
+<td style="text-align: left;">OOS <span
+class="math inline">t</span>-statistic</td>
+<td style="text-align: center;"><strong>0.532</strong></td>
+<td style="text-align: center;">0.467</td>
+<td style="text-align: center;">0.436</td>
+<td style="text-align: center;"><strong>0.327</strong></td>
+<td style="text-align: center;"><span
+class="math inline">0.017</span></td>
+<td style="text-align: center;">0.410</td>
+<td style="text-align: center;"><strong>0.781</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;">IS<span class="math inline">\to</span>OOS
+rank corr.</td>
+<td style="text-align: center;">0.516</td>
+<td style="text-align: center;"><strong>0.508</strong></td>
+<td style="text-align: center;"><strong>0.442</strong></td>
+<td style="text-align: center;">0.318</td>
+<td style="text-align: center;"><span
+class="math inline">0.036</span></td>
+<td style="text-align: center;"><strong>0.424</strong></td>
+<td style="text-align: center;">0.752</td>
+</tr>
+<tr>
+<td style="text-align: left;">Fold win rate</td>
+<td style="text-align: center;">0.434</td>
+<td style="text-align: center;">0.386</td>
+<td style="text-align: center;">0.335</td>
+<td style="text-align: center;">0.246</td>
+<td style="text-align: center;"><span
+class="math inline">-0.012</span></td>
+<td style="text-align: center;">0.323</td>
+<td style="text-align: center;">0.733</td>
+</tr>
+<tr>
+<td style="text-align: left;"><span
+class="math inline">\theta</span>-instability (<span
+class="math inline">-</span>)</td>
+<td style="text-align: center;">0.408</td>
+<td style="text-align: center;">0.371</td>
+<td style="text-align: center;">0.279</td>
+<td style="text-align: center;">0.142</td>
+<td style="text-align: center;"><span
+class="math inline">-0.004</span></td>
+<td style="text-align: center;">0.266</td>
+<td style="text-align: center;">0.733</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Table <a href="#tab:diag" data-reference-type="ref"
+data-reference="tab:diag">1</a> and Figure <a href="#fig:wfer"
+data-reference-type="ref" data-reference="fig:wfer">2</a> (left) give
+the headline operating characteristics. The normalized WFER is genuinely
+informative: Spearman <span class="math inline">\rho = 0.451</span>
+against the true forward Sharpe and AUC <span
+class="math inline">0.743</span> for detecting a deployed loser. The
+folklore is not testing nothing.</p>
+<p>But it is never the best statistic on offer. On every column of
+Table <a href="#tab:diag" data-reference-type="ref"
+data-reference="tab:diag">1</a> except the noise-level null, both WFER
+variants are beaten by at least two of the simpler diagnostics computed
+from the same folds: the stitched OOS <span
+class="math inline">t</span>-statistic (<span class="math inline">\rho =
+0.532</span>, AUC <span class="math inline">0.781</span>), the stitched
+OOS Sharpe (<span class="math inline">\rho = 0.529</span>, AUC <span
+class="math inline">0.779</span>), and the IS<span
+class="math inline">\to</span>OOS rank correlation (<span
+class="math inline">\rho = 0.516</span>, and the best per-regime
+correlations under stationarity and drift). The mechanism is visible in
+<a href="#eq:norm" data-reference-type="eqref"
+data-reference="eq:norm">[eq:norm]</a>: the ratio’s numerator is
+essentially the stitched OOS mean, which carries the forward-relevant
+information; the denominator is the selection-<em>inflated</em> IS mean,
+which is noisy and nearly uninformative about the future, so dividing by
+it mostly injects noise. Consistent with this, the two WFER variants
+rank runs almost identically (<span class="math inline">\rho =
+0.451</span> vs. <span class="math inline">0.447</span>): within a run
+the normalization <a href="#eq:norm" data-reference-type="eqref"
+data-reference="eq:norm">[eq:norm]</a> is a constant factor, so ranking
+is barely affected—what the normalization changes is the
+<em>location</em> of the distribution relative to fixed thresholds,
+which is exactly where the raw form fails (Section <a
+href="#sec:thresholds" data-reference-type="ref"
+data-reference="sec:thresholds">6.2</a>).</p>
+<p>Three qualifications sharpen the picture. First, quality degrades as
+the world becomes less stationary: WFER’s per-regime correlation falls
+from <span class="math inline">0.387</span> (stationary) through <span
+class="math inline">0.365</span> (drift) to <span
+class="math inline">0.260</span> (break), and every other diagnostic
+degrades in the same order—validation statistics are most trustworthy
+exactly when they are least needed. Second, within the null regime every
+diagnostic is uninformative (<span class="math inline">|\rho| \le
+0.036</span>, within sampling noise of zero): once there is no edge, no
+fold statistic separates slightly-less-negative from
+slightly-more-negative deployments. A substantial part of the headline
+AUC therefore comes from separating null from non-null runs: excluding
+the null regime, WFER’s AUC drops from <span
+class="math inline">0.743</span> to <span
+class="math inline">0.685</span>. Third, the ordering is not an artifact
+of the rolling procedure: on anchored folds the picture is the same
+(WFER <span class="math inline">\rho = 0.417</span> vs. OOS <span
+class="math inline">t</span>-statistic <span
+class="math inline">0.527</span>; the IS<span
+class="math inline">\to</span>OOS rank correlation is anchored’s best at
+<span class="math inline">0.542</span>).</p>
+<figure id="fig:wfer" data-latex-placement="t">
+<img src="/figures/fig_wfer.svg" />
+<figcaption><em>Left:</em> normalized WFER (rolling WFO) against the
+true forward Sharpe of the deployed configuration, all <span
+class="math inline">8{,}000</span> runs colored by regime (WFER clipped
+to <span class="math inline">[-1.5, 2.5]</span> for display; Spearman
+<span class="math inline">0.45</span>). Dotted verticals mark the folk
+thresholds <span class="math inline">0.3/0.5/0.8</span>; the gray band
+at slightly negative forward Sharpe is the null regime, which spreads
+across the entire WFER axis. <em>Right:</em> mean true forward Sharpe
+within each folk bin for the normalized (dark) and literal raw (gray)
+WFER; the rotated text gives the fraction of deployed losers per bin.
+The raw bars above <span class="math inline">0.5</span> stand on <span
+class="math inline">4</span> and <span class="math inline">2</span> runs
+respectively.</figcaption>
+</figure>
+<h2 id="sec:thresholds">The folk thresholds are miscalibrated, and the
+raw ratio cannot reach them</h2>
+<div id="tab:bins">
+<table>
+<caption>What the folk WFER bins contain (rolling WFO, <span
+class="math inline">n=8{,}000</span>). The grading reads <span
+class="math inline">\ge 0.8</span> “excellent,” <span
+class="math inline">0.5</span>–<span class="math inline">0.8</span>
+“acceptable,” <span class="math inline">0.3</span>–<span
+class="math inline">0.5</span> “borderline,” <span
+class="math inline">&lt;0.3</span> “overfit,” <span
+class="math inline">&lt;0</span> “unprofitable.” “loser” is the share of
+runs whose deployed forward Sharpe is negative; “null” is the share of
+no-edge-regime runs in the bin. Four runs with non-positive IS PnL,
+where the ratio is ill-defined (all null-regime, all losers), are
+excluded. The <span class="math inline">&lt;0</span> rows coincide
+because the two variants share the sign of the ratio.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"></th>
+<th colspan="4" style="text-align: center;">Normalized WFER</th>
+<th colspan="4" style="text-align: center;">Raw WFER (literal
+formula)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><span>2-5</span>(lr)<span>6-9</span>
+Bin</td>
+<td style="text-align: right;"><span class="math inline">n</span></td>
+<td style="text-align: center;">mean fwd SR</td>
+<td style="text-align: center;">loser</td>
+<td style="text-align: center;">null</td>
+<td style="text-align: right;"><span class="math inline">n</span></td>
+<td style="text-align: center;">mean fwd SR</td>
+<td style="text-align: center;">loser</td>
+<td style="text-align: center;">null</td>
+</tr>
+<tr>
+<td style="text-align: left;"><span
+class="math inline">&lt;0</span></td>
+<td style="text-align: right;">1947</td>
+<td style="text-align: center;">0.246</td>
+<td style="text-align: center;">56.5%</td>
+<td style="text-align: center;">51.7%</td>
+<td style="text-align: right;">1947</td>
+<td style="text-align: center;">0.246</td>
+<td style="text-align: center;">56.5%</td>
+<td style="text-align: center;">51.7%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="math inline">0</span>–<span
+class="math inline">0.3</span></td>
+<td style="text-align: right;">2324</td>
+<td style="text-align: center;">0.588</td>
+<td style="text-align: center;">28.4%</td>
+<td style="text-align: center;">24.1%</td>
+<td style="text-align: right;">5887</td>
+<td style="text-align: center;">0.786</td>
+<td style="text-align: center;">19.3%</td>
+<td style="text-align: center;">16.4%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="math inline">0.3</span>–<span
+class="math inline">0.5</span></td>
+<td style="text-align: right;">1728</td>
+<td style="text-align: center;">0.830</td>
+<td style="text-align: center;">16.0%</td>
+<td style="text-align: center;">13.4%</td>
+<td style="text-align: right;">156</td>
+<td style="text-align: center;">0.956</td>
+<td style="text-align: center;">15.4%</td>
+<td style="text-align: center;">14.1%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="math inline">0.5</span>–<span
+class="math inline">0.8</span></td>
+<td style="text-align: right;">1543</td>
+<td style="text-align: center;">0.994</td>
+<td style="text-align: center;">11.4%</td>
+<td style="text-align: center;">9.6%</td>
+<td style="text-align: right;">4</td>
+<td style="text-align: center;">0.029</td>
+<td style="text-align: center;">75%</td>
+<td style="text-align: center;">75%</td>
+</tr>
+<tr>
+<td style="text-align: left;"><span class="math inline">\geq
+0.8</span></td>
+<td style="text-align: right;">454</td>
+<td style="text-align: center;">0.980</td>
+<td style="text-align: center;">11.9%</td>
+<td style="text-align: center;">11.0%</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: center;">0.212</td>
+<td style="text-align: center;">50%</td>
+<td style="text-align: center;">50%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Table <a href="#tab:bins" data-reference-type="ref"
+data-reference="tab:bins">2</a> and Figure <a href="#fig:wfer"
+data-reference-type="ref" data-reference="fig:wfer">2</a> (right)
+calibrate the folk grading against the forward truth, in both readings
+of the ratio.</p>
+<h4 id="normalized-reading-monotone-below-0.5-flat-above.">Normalized
+reading: monotone below <span class="math inline">0.5</span>, flat
+above.</h4>
+<p>Mean forward Sharpe rises cleanly through the lower bins (<span
+class="math inline">0.246 \to 0.588 \to
+0.830 \to 0.994</span>) and the loser rate falls (<span
+class="math inline">56.5\% \to 28.4\% \to 16.0\% \to
+11.4\%</span>)—the ratio orders outcomes. But the top grade adds
+nothing: the <span class="math inline">\ge 0.8</span> “excellent” bin
+does <em>no better</em> than the <span
+class="math inline">0.5</span>–<span class="math inline">0.8</span>
+“acceptable” bin (<span class="math inline">0.980</span> vs. <span
+class="math inline">0.994</span> mean forward Sharpe; <span
+class="math inline">11.9\%</span> vs. <span
+class="math inline">11.4\%</span> losers). Part of that pooled
+comparison is regime composition—the <span class="math inline">\ge
+0.8</span> bin carries slightly more null-regime runs (<span
+class="math inline">11.0\%</span> vs. <span
+class="math inline">9.6\%</span>); excluding the null regime the means
+remain tied (<span class="math inline">1.107</span> vs. <span
+class="math inline">1.105</span>) while the loser-rate ordering reverses
+and stays insignificant (<span class="math inline">1.0\%</span>
+vs. <span class="math inline">2.0\%</span>, Fisher <span
+class="math inline">p = 0.21</span>)—so “indistinguishable” is the
+reading that survives either composition. And the labels below <span
+class="math inline">0.5</span> mislead badly: the “borderline” <span
+class="math inline">0.3</span>–<span class="math inline">0.5</span> bin
+averages <span class="math inline">+0.830</span> forward Sharpe with
+only a <span class="math inline">16.0\%</span> loser rate, and even the
+“overfit” <span class="math inline">0</span>–<span
+class="math inline">0.3</span> bin averages <span
+class="math inline">+0.588</span>. A desk that discards everything below
+<span class="math inline">0.5</span> throws away <span
+class="math inline">5{,}999</span> of our <span
+class="math inline">8{,}000</span> runs; the <span
+class="math inline">4{,}052</span> of them in the <span
+class="math inline">0</span>–<span class="math inline">0.5</span> bins
+have forward Sharpe averaging <span class="math inline">+0.59</span> to
+<span class="math inline">+0.83</span>. The only cut with qualitatively
+distinct content is the sign: the <span class="math inline">&lt;0</span>
+bin is half null-regime (<span class="math inline">51.7\%</span>) and
+majority losers (<span class="math inline">56.5\%</span>).</p>
+<h4 id="raw-reading-the-thresholds-are-unreachable.">Raw reading: the
+thresholds are unreachable.</h4>
+<p>Under the literal PnL-sum formula <a href="#eq:raw"
+data-reference-type="eqref" data-reference="eq:raw">[eq:raw]</a>, <span
+class="math inline">74\%</span> of positive-IS runs land in <span
+class="math inline">0</span>–<span class="math inline">0.3</span> and
+only <span class="math inline">6</span> of <span
+class="math inline">8{,}000</span> runs reach <span
+class="math inline">0.5</span> at all. This is structural, not empirical
+accident: with IS windows <span class="math inline">3</span>–<span
+class="math inline">4\times</span> the OOS windows, <span
+class="math inline">\mathrm{WFER}_{\mathrm{raw}} \approx
+(0.25</span>–<span class="math inline">0.33) \times
+\mathrm{WFER}_{\mathrm{norm}}</span>, so reaching <span
+class="math inline">0.5</span> requires OOS PnL <em>per period</em>
+<span class="math inline">1.5</span>–<span
+class="math inline">2\times</span> the IS rate—which in practice happens
+only through an anomalously small IS denominator. Indeed the six runs
+that do clear <span class="math inline">0.5</span> average forward
+Sharpe <span class="math inline">+0.09</span> and four of the six are
+deployed losers—three in the “acceptable” <span
+class="math inline">0.5</span>–<span class="math inline">0.8</span> bin
+(which averages <span class="math inline">+0.029</span>) and one in the
+“excellent” <span class="math inline">\ge 0.8</span> bin, a run whose
+raw ratio of <span class="math inline">4.33</span> is the most extreme
+in the entire sample: under the raw reading, a high WFER is closer to a
+danger sign than a seal of quality. A practitioner who grades the
+literal ratio against the folk table will reject essentially
+everything—or, worse, accept exactly the degenerate denominators. Any
+WFER user must therefore state which formula they grade; the thresholds
+are only even meaningful per-period normalized.</p>
+<h2 id="sec:illcond">The per-window ratio is ill-conditioned</h2>
+<p>The folklore also reads efficiency window by window (<span
+class="math inline">O_j/I_j</span> per fold). That ratio explodes
+whenever a single fold’s IS PnL is near zero. We flag a run as having a
+<em>weak-denominator window</em> if its weakest fold has <span
+class="math inline">|I_j| &lt; s_j\sqrt{n_j}</span>, i.e. an IS PnL
+within one standard error of zero (<span class="math inline">z_j &lt;
+1</span>). At this one-standard-error threshold the flag catches <span
+class="math inline">21.4\%</span> of all runs—<span
+class="math inline">12.3\%</span>, <span
+class="math inline">12.7\%</span>, and <span
+class="math inline">13.5\%</span> under stationarity, drift, and break,
+but <span class="math inline">47.3\%</span> under the null, exactly
+where the diagnostic is supposed to protect you. In flagged runs the
+median largest per-window <span
+class="math inline">|{\mathrm{WFER}}|</span> is <span
+class="math inline">0.88</span> versus <span
+class="math inline">0.43</span> in clean runs, and <span
+class="math inline">5.4\%</span> of flagged runs contain a window ratio
+exceeding <span class="math inline">5</span> in magnitude (versus <span
+class="math inline">0.0\%</span> of clean runs). Loosening the flag to
+<span class="math inline">z_j &lt; 2</span> catches <span
+class="math inline">69.0\%</span> of all runs (<span
+class="math inline">96\%</span> of null): by the ordinary standards of
+statistical significance, most walk-forward runs contain at least one
+window whose efficiency reading is built on a denominator
+indistinguishable from zero.</p>
+<p>The aggregate ratio <a href="#eq:norm" data-reference-type="eqref"
+data-reference="eq:norm">[eq:norm]</a> is better protected—only <span
+class="math inline">0.46\%</span> of runs have <span
+class="math inline">|\overline{\mathrm{IS}}|</span> within one standard
+error of zero (<span class="math inline">1.6\%</span> of null)—but where
+it happens the statistic collapses: the WFER interquartile range jumps
+from <span class="math inline">0.49</span> (clean) to <span
+class="math inline">2.44</span> (flagged), the correlation with forward
+truth falls from <span class="math inline">0.45</span> to <span
+class="math inline">0.08</span>, and <span
+class="math inline">32\%</span> of flagged runs report <span
+class="math inline">|{\mathrm{WFER}}| &gt; 3</span> (versus <span
+class="math inline">0.01\%</span> of clean runs). The practical rule
+writes itself: never read an efficiency ratio, aggregate or per window,
+without first checking that its denominator is statistically
+distinguishable from zero.</p>
+<h2 id="sec:avr">Anchored vs. rolling: the folklore direction is right;
+its price is not stated</h2>
+<figure id="fig:avr" data-latex-placement="t">
+<img src="/figures/fig_anchored_vs_rolling.svg" />
+<figcaption>Anchored vs. rolling walk-forward, paired on identical
+histories and OOS segments (<span class="math inline">2{,}000</span>
+runs per regime). <em>Left:</em> mean true forward Sharpe of the
+deployed configuration by regime, error bars <span
+class="math inline">\pm 1</span> SEM. <em>Right:</em> violins of the
+within-run paired difference (rolling minus anchored) with the mean
+marked; under the null the difference is exactly zero, because the
+surface is flat in <span class="math inline">\theta</span> and the
+deployed parameter is irrelevant.</figcaption>
+</figure>
+<p>Practitioner advice holds that anchored (expanding) windows “use all
+the data” while rolling windows “adapt to regime change.” The paired
+comparison in Figure <a href="#fig:avr" data-reference-type="ref"
+data-reference="fig:avr">3</a> confirms the direction and prices it.
+Under stationarity, anchored wins: <span
+class="math inline">1.062</span> vs. <span
+class="math inline">0.962</span> mean forward Sharpe, a paired
+difference of <span class="math inline">-0.100 \pm 0.007</span>
+(Wilcoxon signed-rank with zero differences discarded, the default
+convention; ties are <span class="math inline">26\%</span> of pairs per
+regime, and the reported means and standard errors include them; <span
+class="math inline">p \approx 2\times10^{-39}</span>). Under drift,
+rolling wins by <span class="math inline">+0.079 \pm
+0.009</span> (<span class="math inline">p \approx
+8\times10^{-18}</span>; rolling wins <span
+class="math inline">44\%</span> of paired runs and loses <span
+class="math inline">30\%</span>), and under a structural break by <span
+class="math inline">+0.154 \pm 0.011</span> (<span class="math inline">p
+\approx 5\times10^{-40}</span>; wins <span
+class="math inline">46\%</span>, loses <span
+class="math inline">28\%</span>). Under the null the two procedures tie
+exactly. Across our equal-weight regime mix the net favors rolling,
+<span class="math inline">+0.034 \pm 0.004</span> overall (<span
+class="math inline">p \approx 6\times10^{-12}</span>).</p>
+<p>So the folklore’s direction survives a controlled test—rolling is
+regime-change insurance—but the premium is real and symmetric in size
+with the payout: roughly <span class="math inline">0.10</span> Sharpe
+forfeited if the world happens to be stationary, against <span
+class="math inline">0.08</span>–<span class="math inline">0.15</span>
+gained if it drifts or breaks. The choice is a bet on non-stationarity,
+not a free robustness upgrade. This echoes, in a selection-pipeline
+setting, the econometric result that rolling-window size should be tuned
+to the degree of parameter drift <span class="citation"
+data-cites="inoue2017rolling">(Inoue et al. 2017)</span>.</p>
+<h2 id="sec:window">Window design matters for the estimate, not the
+deployment</h2>
+<figure id="fig:window" data-latex-placement="t">
+<img src="/figures/fig_window_design.svg" />
+<figcaption>The window-design sweep (rolling WFO; history fixed at <span
+class="math inline">756</span> periods; test length <span
+class="math inline">= L_{\mathrm{train}}/3</span>; <span
+class="math inline">1{,}500</span> runs per cell). <em>Left:</em> mean
+true forward Sharpe of the deployed configuration by regime, <span
+class="math inline">\pm 1</span> SEM, across the train-length grid.
+<em>Right:</em> Spearman correlation of the normalized WFER (solid) and
+the stitched OOS Sharpe (dashed) with the forward truth; the dotted gray
+curve (right axis) is the mean number of folds, falling from <span
+class="math inline">33</span> at <span
+class="math inline">L_{\mathrm{train}}=63</span> to <span
+class="math inline">1</span> at <span class="math inline">504</span>.
+Both diagnostics peak near nine folds and collapse at one; the OOS
+Sharpe dominates WFER at every train length.</figcaption>
+</figure>
+<p>The sweep (Figure <a href="#fig:window" data-reference-type="ref"
+data-reference="fig:window">4</a>) separates two questions the folklore
+runs together: does window design change <em>what you deploy</em>, and
+does it change <em>what you know about it</em>?</p>
+<h4 id="deployment-is-forgiving.">Deployment is forgiving.</h4>
+<p>Mean deployed forward Sharpe is <span
+class="math inline">0.567</span> at <span
+class="math inline">L_{\mathrm{train}} = 63</span> and then essentially
+flat from <span class="math inline">126</span> up: <span
+class="math inline">0.640</span>, <span
+class="math inline">0.651</span>, <span
+class="math inline">0.655</span>, <span
+class="math inline">0.651</span>, <span class="math inline">0.662</span>
+across <span class="math inline">\{126, 189, 252, 378, 504\}</span>.
+Only a train window too short to estimate the surface (<span
+class="math inline">63</span> periods, one calendar quarter) measurably
+hurts. Beneath the flat aggregate there is mild regime texture that the
+folklore’s “shorter adapts faster” intuition only partly anticipates:
+stationary runs improve monotonically with train length (<span
+class="math inline">0.815 \to 1.026</span>), break runs peak at <span
+class="math inline">189</span> (<span class="math inline">0.855</span>)
+and fade to <span class="math inline">0.784</span> by <span
+class="math inline">504</span>, and drift runs are flat within noise
+(<span class="math inline">0.84</span>–<span
+class="math inline">0.89</span>) for <span
+class="math inline">L_{\mathrm{train}} \ge 126</span>.</p>
+<h4 id="the-estimate-is-not.">The estimate is not.</h4>
+<p>The diagnostic quality of the same folds moves a lot. The
+WFER–forward rank correlation rises from <span
+class="math inline">0.467</span> (<span class="math inline">33</span>
+folds of a noisy-short window) to a peak of <span
+class="math inline">0.516</span> at <span
+class="math inline">L_{\mathrm{train}} = 189</span> (nine folds), then
+collapses as folds disappear: <span class="math inline">0.456</span>
+(six), <span class="math inline">0.388</span> (three), and <span
+class="math inline">0.225</span> at the single-fold corner—which is
+exactly the single train/test split that much practice still defaults
+to. The stitched OOS Sharpe traces the same arc (<span
+class="math inline">0.496 \to 0.575
+\to 0.325</span>) and dominates WFER at every train length. The RMSE of
+the stitched OOS Sharpe as an estimator of the forward Sharpe rises from
+<span class="math inline">{\approx}0.72</span>–<span
+class="math inline">0.73</span> at many folds to <span
+class="math inline">1.33</span> at one fold (the rise is essentially
+monotone, with a <span class="math inline">0.003</span> dip between the
+two longest many-fold settings), while its <em>bias</em> stays below
+<span class="math inline">0.02</span> in magnitude in every cell:
+fold-stitching buys variance reduction, not bias correction. The
+actionable summary: pick the train window long enough to learn the
+surface (<span class="math inline">{\ge}126</span> periods here), then
+cut the rest of the history into as many non-overlapping OOS segments as
+that allows—the deployment will not care, and every diagnostic will.</p>
+<h2 id="sec:ranking">Procedure ranking: rolling deploys best; shuffled
+<span class="math inline">k</span>-fold flatters most; CPCV-lite ranks
+best</h2>
+<div id="tab:proc">
+<table>
+<caption>The five procedures on the same <span
+class="math inline">8{,}000</span> histories. Left block: mean true
+forward Sharpe of the deployed configuration, overall and per regime
+(under the null all procedures earn the same <span
+class="math inline">-0.049</span>: the surface is flat in <span
+class="math inline">\theta</span>, so the deployed parameter is
+irrelevant). Right block: the procedure’s own validation estimate
+(stitched OOS Sharpe)—signed bias (estimate minus forward truth;
+overall, drift, break) and Spearman correlation with the forward truth.
+Anchored and CPCV-lite deploy the same configuration (full-history
+argmax) by construction, hence identical forward columns. Bold marks the
+best per column.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"></th>
+<th colspan="4" style="text-align: center;">True forward Sharpe
+(deployed)</th>
+<th colspan="4" style="text-align: center;">Validation estimate</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><span>2-5</span>(lr)<span>6-9</span>
+Procedure</td>
+<td style="text-align: center;">overall</td>
+<td style="text-align: center;">station.</td>
+<td style="text-align: center;">drift</td>
+<td style="text-align: center;">break</td>
+<td style="text-align: center;">bias</td>
+<td style="text-align: center;">bias<span
+class="math inline">_{\text{drift}}</span></td>
+<td style="text-align: center;">bias<span
+class="math inline">_{\text{break}}</span></td>
+<td style="text-align: center;"><span
+class="math inline">\rho</span>(est, fwd)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Single split</td>
+<td style="text-align: center;">0.558</td>
+<td style="text-align: center;">1.030</td>
+<td style="text-align: center;">0.702</td>
+<td style="text-align: center;">0.551</td>
+<td style="text-align: center;"><span
+class="math inline">+0.073</span></td>
+<td style="text-align: center;"><span
+class="math inline">+0.212</span></td>
+<td style="text-align: center;"><span
+class="math inline">+0.103</span></td>
+<td style="text-align: center;">0.477</td>
+</tr>
+<tr>
+<td style="text-align: left;">Anchored WFO</td>
+<td style="text-align: center;">0.624</td>
+<td style="text-align: center;">1.062</td>
+<td style="text-align: center;">0.790</td>
+<td style="text-align: center;">0.692</td>
+<td style="text-align: center;"><span
+class="math inline">+0.048</span></td>
+<td style="text-align: center;"><span
+class="math inline">+0.149</span></td>
+<td style="text-align: center;"><span
+class="math inline">+0.071</span></td>
+<td style="text-align: center;">0.524</td>
+</tr>
+<tr>
+<td style="text-align: left;">Rolling WFO</td>
+<td style="text-align: center;"><strong>0.657</strong></td>
+<td style="text-align: center;">0.962</td>
+<td style="text-align: center;"><strong>0.869</strong></td>
+<td style="text-align: center;"><strong>0.846</strong></td>
+<td style="text-align: center;"><span
+class="math inline">\mathbf{+0.013}</span></td>
+<td style="text-align: center;"><span
+class="math inline">\mathbf{+0.060}</span></td>
+<td style="text-align: center;"><span
+class="math inline">\mathbf{-0.034}</span></td>
+<td style="text-align: center;">0.529</td>
+</tr>
+<tr>
+<td style="text-align: left;">Shuffled <span
+class="math inline">k</span>-fold</td>
+<td style="text-align: center;">0.623</td>
+<td style="text-align: center;"><strong>1.066</strong></td>
+<td style="text-align: center;">0.788</td>
+<td style="text-align: center;">0.688</td>
+<td style="text-align: center;"><span
+class="math inline">+0.083</span></td>
+<td style="text-align: center;"><span
+class="math inline">+0.191</span></td>
+<td style="text-align: center;"><span
+class="math inline">+0.147</span></td>
+<td style="text-align: center;">0.541</td>
+</tr>
+<tr>
+<td style="text-align: left;">CPCV-lite</td>
+<td style="text-align: center;">0.624</td>
+<td style="text-align: center;">1.062</td>
+<td style="text-align: center;">0.790</td>
+<td style="text-align: center;">0.692</td>
+<td style="text-align: center;"><span
+class="math inline">+0.049</span></td>
+<td style="text-align: center;"><span
+class="math inline">+0.155</span></td>
+<td style="text-align: center;"><span
+class="math inline">+0.079</span></td>
+<td style="text-align: center;"><strong>0.636</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>Table <a href="#tab:proc" data-reference-type="ref"
+data-reference="tab:proc">3</a> ranks the procedures on both jobs a
+validation scheme performs: choosing what to deploy, and estimating how
+it will do.</p>
+<h4 id="deployment.">Deployment.</h4>
+<p>Rolling WFO deploys best overall (<span
+class="math inline">0.657</span>; mean regret against the forward-oracle
+<span class="math inline">0.226</span>), entirely through its advantage
+under drift and breaks; under stationarity it pays the recency price of
+Section <a href="#sec:avr" data-reference-type="ref"
+data-reference="sec:avr">6.4</a>. Anchored, CPCV-lite, and shuffled
+<span class="math inline">k</span>-fold form a cluster near <span
+class="math inline">0.623</span>–<span
+class="math inline">0.624</span>—unsurprisingly, since all three
+effectively deploy a full-history selection (<span
+class="math inline">k</span>-fold’s CV-mean argmax lands almost exactly
+where the full-history argmax does). The single split is clearly worst
+(<span class="math inline">0.558</span>; regret <span
+class="math inline">0.325</span>): it selects on only the first <span
+class="math inline">65</span>–<span class="math inline">75\%</span> of
+the history, and under drift or break the discarded recent data is
+precisely the most relevant.</p>
+<h4 id="estimates.">Estimates.</h4>
+<p>The shuffled <span class="math inline">k</span>-fold is the most
+optimistic estimator overall (<span class="math inline">+0.083</span>
+Sharpe bias), and its failure is regime-specific in the way <span
+class="citation" data-cites="lopezdeprado2018advances">López de Prado
+(2018)</span> and <span class="citation"
+data-cites="cerqueira2020evaluating">Cerqueira et al. (2020)</span>
+would predict: essentially unbiased under stationarity (<span
+class="math inline">-0.006</span>, consistent with the validity result
+of <span class="citation" data-cites="bergmeir2018note">Bergmeir et al.
+(2018)</span> for this serially independent DGP), but <span
+class="math inline">+0.191</span> under drift and <span
+class="math inline">+0.147</span> under break, because interleaved test
+folds let the procedure train on the future of the very points it tests.
+Notably, the single split’s estimate is even <em>worse</em> under drift
+(<span class="math inline">+0.212</span>): one early-selected
+configuration, one late test window, and a forward horizon that keeps
+moving. Rolling is the least biased overall (<span
+class="math inline">+0.013</span>), though this is partly cancellation
+(<span class="math inline">+0.060</span> drift, <span
+class="math inline">-0.034</span> break, <span
+class="math inline">+0.002</span> stationary). And a sobering regularity
+cuts across all five procedures: under drift every bias is positive—when
+the optimum moves, decay continues into the deployment horizon, so even
+a perfectly honest OOS estimate is a backcast, not a forecast.</p>
+<h4 id="ranking-quality.">Ranking quality.</h4>
+<p>As a <em>ranking</em> signal across runs, CPCV-lite’s estimate is the
+clear winner (<span class="math inline">\rho = 0.636</span> vs. <span
+class="math inline">0.524</span>–<span class="math inline">0.541</span>
+for everything else): averaging <span class="math inline">15</span>
+combinatorial paths stabilizes the estimate even in a DGP with no label
+leakage to purge, supporting the multiple-paths argument for CPCV <span
+class="citation" data-cites="lopezdeprado2018advances">(López de Prado
+2018)</span> on grounds independent of purging. The single split is the
+weakest ranker (<span class="math inline">0.477</span>) as well as the
+weakest deployer—the worst of both worlds.</p>
+<h1 id="sec:discussion">Discussion</h1>
+<h4
+id="if-you-run-walk-forward-you-already-have-something-better-than-wfer.">If
+you run walk-forward, you already have something better than WFER.</h4>
+<p>The ratio’s numerator—stitched OOS performance—is where the
+information lives; its denominator adds selection-biased noise and a
+divide-by-near-zero failure mode. On every regime with an edge, the
+stitched OOS <span class="math inline">t</span>-statistic and Sharpe
+dominate WFER on both ranking and loser-detection, at zero additional
+computational cost. The IS<span class="math inline">\to</span>OOS rank
+correlation is a strong complement (best under stationarity and drift,
+and for anchored folds), because it uses the whole <span
+class="math inline">\theta</span>-cross-section per fold instead of one
+selected point. If a ratio must be reported, it should be the per-period
+normalized form <a href="#eq:norm" data-reference-type="eqref"
+data-reference="eq:norm">[eq:norm]</a>, accompanied by a check that the
+IS denominator is statistically distinguishable from zero—a check that
+fails somewhere in most runs at conventional significance (Section <a
+href="#sec:illcond" data-reference-type="ref"
+data-reference="sec:illcond">6.3</a>).</p>
+<h4 id="retire-the-grading-table.">Retire the grading table.</h4>
+<p>In its only coherent (normalized) reading, the folk grading gets one
+thing right—the ordering below <span class="math inline">0.5</span>—and
+both of its labels wrong: the “excellent” grade above <span
+class="math inline">0.8</span> contains nothing the “acceptable” bin
+does not, and the “borderline/overfit” zone below <span
+class="math inline">0.5</span> averages solidly positive forward
+performance in our world. The literal raw-PnL form cannot reach the
+thresholds at all, and the six runs that do reach them are dominated by
+degenerate denominators. The defensible uses of WFER are relative
+(ranking candidate configurations within a shop) and sign-based (a
+negative ratio is a genuine red flag: <span
+class="math inline">56.5\%</span> losers, half of them null-regime).
+Absolute grades imported from folklore transfer neither across window
+designs (raw vs. normalized differ by a factor of <span
+class="math inline">3</span>–<span class="math inline">4</span> here by
+construction) nor, on this evidence, across the <span
+class="math inline">0.5</span> line where the bins stop separating.</p>
+<h4 id="window-folklore-repriced.">Window folklore, repriced.</h4>
+<p>Anchored-vs.-rolling should be presented as a bet, not a best
+practice: rolling buys <span class="math inline">0.08</span>–<span
+class="math inline">0.15</span> of forward Sharpe under drift and breaks
+at a premium of <span class="math inline">0.10</span> under
+stationarity. Window length is the reverse: it barely moves the
+deployment (above a minimum train length) but strongly moves how much
+the validation <em>tells</em> you, peaking near nine folds in our
+setting and collapsing at the single-split corner. The common default of
+one IS/OOS split is quantifiably the worst choice on both axes. And the
+<span class="math inline">k</span>-fold warning for finance deserves its
+precise form: with serially independent returns the scheme’s estimate is
+fine under stationarity; what kills it is non-stationarity, where it
+trains on the future and overstates forward Sharpe by <span
+class="math inline">0.15</span>–<span
+class="math inline">0.19</span>—while <em>deploying</em> essentially the
+same configuration as anchored WFO. The danger is the number it reports,
+not the parameter it picks.</p>
+<h1 id="sec:limitations">Limitations</h1>
+<p>Our returns are Gaussian and serially independent given the surface,
+with a single constant-share market factor; real returns have fat tails,
+volatility clustering, and dependence that would degrade all diagnostics
+further and could re-order them—in particular, CPCV-lite’s embargo does
+no real work here because there is no label overlap to purge, so our
+CPCV result speaks to its multiple-paths averaging, not its purging. The
+strategy family is one-dimensional with a single Gaussian bump;
+interacting parameters and multimodal surfaces (studied in a sibling
+paper on plateau heuristics) are out of scope. The selection rule is
+everywhere the argmax of train-window Sharpe; regularized or shape-aware
+selection would change both deployments and diagnostics. Our regimes are
+stylized (linear drift, single break, fixed <span
+class="math inline">252</span>-period forward horizon), the surface
+amplitude range (<span class="math inline">0.4</span>–<span
+class="math inline">2.0</span> annualized Sharpe) is generous, and lower
+true edges would lower every correlation in Table <a href="#tab:diag"
+data-reference-type="ref" data-reference="tab:diag">1</a>. The
+bin-calibration findings also depend on the surface geometry: in worlds
+with optima far sharper than our sampled widths (<span
+class="math inline">0.10</span>–<span class="math inline">0.35</span>),
+the top WFER grade can begin to separate from the next one, so the “flat
+above <span class="math inline">0.5</span>” result should be read within
+the disclosed width range. The thresholds are evaluated as bins over a
+heterogeneous design mix, not as decision policies with explicit costs;
+and our normalized WFER is one disclosed reading of “annualized OOS over
+annualized IS”—other normalizations (per-trade, risk-adjusted)
+circulate. Finally, we model no transaction costs and no re-optimization
+during the forward horizon, which a live walk-forward deployment would
+perform.</p>
+<h1 id="conclusion">Conclusion</h1>
+<p>We gave walk-forward validation’s acceptance statistic its first
+controlled test against a known ground truth. The walk-forward
+efficiency ratio is informative but strictly redundant: every job it
+does is done better by the stitched OOS <span
+class="math inline">t</span>-statistic, OOS Sharpe, or IS<span
+class="math inline">\to</span>OOS rank correlation computed from the
+same folds, and its distinguishing operation—dividing by in-sample
+PnL—contributes noise, a degenerate-denominator failure mode affecting
+one run in five (and half of the no-edge runs), and a units problem that
+makes the popular thresholds unreachable in their literal raw-PnL form
+(<span class="math inline">6</span> of <span
+class="math inline">8{,}000</span> runs). The folk grading is
+miscalibrated even in its coherent normalized reading: nothing separates
+“excellent” from “acceptable,” and the “overfit” zone averages <span
+class="math inline">+0.59</span> to <span
+class="math inline">+0.83</span> forward Sharpe. The window folklore
+fares better: rolling windows do beat anchored under drift and breaks
+(and cost <span class="math inline">0.10</span> under stationarity),
+window length matters chiefly through the number of folds and hence the
+quality of the estimate, and walk-forward’s forward-chained structure
+does discipline the estimate relative to a shuffled <span
+class="math inline">k</span>-fold—whose optimism under non-stationarity
+we quantify at <span class="math inline">+0.15</span> to <span
+class="math inline">+0.19</span> Sharpe. Validate with walk-forward, by
+all means; read its OOS track record directly, guard every denominator,
+and leave the <span class="math inline">0.8/0.5/0.3</span> table
+behind.</p>
+<h4 id="reproducibility.">Reproducibility.</h4>
+<p>All experiments are deterministic given the released seeds (<span
+class="math inline">101</span> for the main batch, <span
+class="math inline">303</span> for the window sweep). A single command
+(<code>python scripts/run_all.py</code>) regenerates every result,
+<code>python -m wfo_experiments.figures</code> regenerates every figure,
+and <code>scripts/check_paper_numbers.py</code> verifies that every
+number quoted in this paper matches the generated results to rounding.
+The generative model, the five procedures, the diagnostics, and the
+analysis are provided as an open-source package.</p>
+<h1 id="references">References</h1><div id="refs" class="references csl-bib-body hanging-indent"
+role="list">
+<div id="ref-arnott2019backtesting" class="csl-entry" role="listitem">
+Arnott, Rob, Campbell R. Harvey, and Harry Markowitz. 2019. <span>“A
+Backtesting Protocol in the Era of Machine Learning.”</span> <em>The
+Journal of Financial Data Science</em> 1 (1): 64–74. <a
+href="https://doi.org/10.3905/jfds.2019.1.064">https://doi.org/10.3905/jfds.2019.1.064</a>.
+</div>
+<div id="ref-bailey2014pseudomathematics" class="csl-entry"
+role="listitem">
+Bailey, David H., Jonathan M. Borwein, Marcos López de Prado, and Qiji
+Jim Zhu. 2014. <span>“Pseudo-Mathematics and Financial Charlatanism: The
+Effects of Backtest Overfitting on Out-of-Sample Performance.”</span>
+<em>Notices of the American Mathematical Society</em> 61 (5): 458–71. <a
+href="https://doi.org/10.1090/noti1105">https://doi.org/10.1090/noti1105</a>.
+</div>
+<div id="ref-bailey2017probability" class="csl-entry" role="listitem">
+Bailey, David H., Jonathan M. Borwein, Marcos López de Prado, and Qiji
+Jim Zhu. 2017. <span>“The Probability of Backtest Overfitting.”</span>
+<em>Journal of Computational Finance</em> 20 (4): 39–69. <a
+href="https://doi.org/10.21314/JCF.2016.322">https://doi.org/10.21314/JCF.2016.322</a>.
+</div>
+<div id="ref-bailey2014deflated" class="csl-entry" role="listitem">
+Bailey, David H., and Marcos López de Prado. 2014. <span>“The Deflated
+<span>Sharpe</span> Ratio: Correcting for Selection Bias, Backtest
+Overfitting, and Non-Normality.”</span> <em>The Journal of Portfolio
+Management</em> 40 (5): 94–107. <a
+href="https://doi.org/10.3905/jpm.2014.40.5.094">https://doi.org/10.3905/jpm.2014.40.5.094</a>.
+</div>
+<div id="ref-bergmeir2012use" class="csl-entry" role="listitem">
+Bergmeir, Christoph, and José M. Benítez. 2012. <span>“On the Use of
+Cross-Validation for Time Series Predictor Evaluation.”</span>
+<em>Information Sciences</em> 191: 192–213. <a
+href="https://doi.org/10.1016/j.ins.2011.12.028">https://doi.org/10.1016/j.ins.2011.12.028</a>.
+</div>
+<div id="ref-bergmeir2018note" class="csl-entry" role="listitem">
+Bergmeir, Christoph, Rob J. Hyndman, and Bonsoo Koo. 2018. <span>“A Note
+on the Validity of Cross-Validation for Evaluating Autoregressive Time
+Series Prediction.”</span> <em>Computational Statistics &amp; Data
+Analysis</em> 120: 70–83. <a
+href="https://doi.org/10.1016/j.csda.2017.11.003">https://doi.org/10.1016/j.csda.2017.11.003</a>.
+</div>
+<div id="ref-cerqueira2020evaluating" class="csl-entry" role="listitem">
+Cerqueira, Vitor, Luis Torgo, and Igor Mozetič. 2020. <span>“Evaluating
+Time Series Forecasting Models: An Empirical Study on Performance
+Estimation Methods.”</span> <em>Machine Learning</em> 109 (11):
+1997–2028. <a
+href="https://doi.org/10.1007/s10994-020-05910-7">https://doi.org/10.1007/s10994-020-05910-7</a>.
+</div>
+<div id="ref-hansen2005test" class="csl-entry" role="listitem">
+Hansen, Peter Reinhard. 2005. <span>“A Test for Superior Predictive
+Ability.”</span> <em>Journal of Business &amp; Economic Statistics</em>
+23 (4): 365–80. <a
+href="https://doi.org/10.1198/073500105000000063">https://doi.org/10.1198/073500105000000063</a>.
+</div>
+<div id="ref-harvey2015backtesting" class="csl-entry" role="listitem">
+Harvey, Campbell R., and Yan Liu. 2015. <span>“Backtesting.”</span>
+<em>The Journal of Portfolio Management</em> 42 (1): 13–28. <a
+href="https://doi.org/10.3905/jpm.2015.42.1.013">https://doi.org/10.3905/jpm.2015.42.1.013</a>.
+</div>
+<div id="ref-inoue2017rolling" class="csl-entry" role="listitem">
+Inoue, Atsushi, Lu Jin, and Barbara Rossi. 2017. <span>“Rolling Window
+Selection for Out-of-Sample Forecasting with Time-Varying
+Parameters.”</span> <em>Journal of Econometrics</em> 196 (1): 55–67. <a
+href="https://doi.org/10.1016/j.jeconom.2016.03.006">https://doi.org/10.1016/j.jeconom.2016.03.006</a>.
+</div>
+<div id="ref-inoue2005insample" class="csl-entry" role="listitem">
+Inoue, Atsushi, and Lutz Kilian. 2005. <span>“In-Sample or Out-of-Sample
+Tests of Predictability: Which One Should We Use?”</span>
+<em>Econometric Reviews</em> 23 (4): 371–402. <a
+href="https://doi.org/10.1081/ETC-200040785">https://doi.org/10.1081/ETC-200040785</a>.
+</div>
+<div id="ref-lopezdeprado2018advances" class="csl-entry"
+role="listitem">
+López de Prado, Marcos. 2018. <em>Advances in Financial Machine
+Learning</em>. John Wiley &amp; Sons.
+</div>
+<div id="ref-pardo1992design" class="csl-entry" role="listitem">
+Pardo, Robert. 1992. <em>Design, Testing, and Optimization of Trading
+Systems</em>. John Wiley &amp; Sons.
+</div>
+<div id="ref-pardo2008evaluation" class="csl-entry" role="listitem">
+Pardo, Robert. 2008. <em>The Evaluation and Optimization of Trading
+Strategies</em>. 2nd ed. John Wiley &amp; Sons. <a
+href="https://doi.org/10.1002/9781119196969">https://doi.org/10.1002/9781119196969</a>.
+</div>
+<div id="ref-rossi2013exchange" class="csl-entry" role="listitem">
+Rossi, Barbara. 2013. <span>“Exchange Rate Predictability.”</span>
+<em>Journal of Economic Literature</em> 51 (4): 1063–119. <a
+href="https://doi.org/10.1257/jel.51.4.1063">https://doi.org/10.1257/jel.51.4.1063</a>.
+</div>
+<div id="ref-rossi2012outofsample" class="csl-entry" role="listitem">
+Rossi, Barbara, and Atsushi Inoue. 2012. <span>“Out-of-Sample Forecast
+Tests Robust to the Choice of Window Size.”</span> <em>Journal of
+Business &amp; Economic Statistics</em> 30 (3): 432–53. <a
+href="https://doi.org/10.1080/07350015.2012.693850">https://doi.org/10.1080/07350015.2012.693850</a>.
+</div>
+<div id="ref-tashman2000outofsample" class="csl-entry" role="listitem">
+Tashman, Leonard J. 2000. <span>“Out-of-Sample Tests of Forecasting
+Accuracy: An Analysis and Review.”</span> <em>International Journal of
+Forecasting</em> 16 (4): 437–50. <a
+href="https://doi.org/10.1016/S0169-2070(00)00065-0">https://doi.org/10.1016/S0169-2070(00)00065-0</a>.
+</div>
+<div id="ref-tomasini2009trading" class="csl-entry" role="listitem">
+Tomasini, Emilio, and Urban Jaekle. 2009. <em>Trading Systems: A New
+Approach to System Development and Portfolio Optimisation</em>. Harriman
+House.
+</div>
+<div id="ref-tradestation_wfo" class="csl-entry" role="listitem">
+TradeStation Technologies. n.d. <em>About the Walk-Forward
+Optimizer</em>. TradeStation Platform Help, <a
+href="https://help.tradestation.com/10_00/eng/tswfo/topics/about_wfo.htm"
+class="uri">https://help.tradestation.com/10_00/eng/tswfo/topics/about_wfo.htm</a>.
+</div>
+<div id="ref-white2000reality" class="csl-entry" role="listitem">
+White, Halbert. 2000. <span>“A Reality Check for Data Snooping.”</span>
+<em>Econometrica</em> 68 (5): 1097–126. <a
+href="https://doi.org/10.1111/1468-0262.00152">https://doi.org/10.1111/1468-0262.00152</a>.
+</div>
+</div>
+<section id="footnotes" class="footnotes footnotes-end-of-document"
+role="doc-endnotes">
+<hr />
+<ol>
+<li id="fn1"><p>The literal raw-PnL WFER recipe and the <span
+class="math inline">0.8/0.5/0.3</span> grading table tested in this
+paper appear in the author’s own earlier practitioner writing (a
+market-making blog post on walk-forward optimization). This paper is
+therefore a controlled self-audit of advice the author has himself
+circulated, not an attack on a third party. The thresholds have no
+citable primary source that we could locate; the only stable documented
+artifact is TradeStation’s WFE <span class="math inline">\ge 50\%</span>
+pass criterion <span class="citation"
+data-cites="tradestation_wfo">(TradeStation Technologies, n.d.)</span>,
+and we deliberately do not attribute the triple to <span
+class="citation" data-cites="pardo2008evaluation">Pardo (2008)</span>.<a
+href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section>

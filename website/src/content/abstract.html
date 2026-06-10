@@ -1,0 +1,65 @@
+<p>Walk-forward optimization is the de facto validation protocol of
+systematic trading, and the <em>walk-forward efficiency ratio</em>
+(WFER)—out-of-sample (OOS) performance over in-sample (IS)
+performance—is its de facto acceptance statistic, graded in practitioner
+folklore as excellent above <span class="math inline">0.8</span>,
+acceptable above <span class="math inline">0.5</span>, and overfit below
+<span class="math inline">0.3</span>–<span
+class="math inline">0.5</span>. To our knowledge neither the ratio nor
+the grading has ever been measured against a known ground truth. We
+build a controlled simulation in which a one-parameter strategy family
+has a known, time-varying annualized-Sharpe surface—stationary, drifting
+optimum, structural break, or no-edge null—so the true forward Sharpe of
+every deployed configuration is computable exactly, and we run five
+validation procedures (single split, anchored and rolling walk-forward,
+naive shuffled <span class="math inline">k</span>-fold, and a CPCV-lite)
+on the same <span class="math inline">8{,}000</span> simulated histories
+(<span class="math inline">2{,}000</span> per regime), plus a <span
+class="math inline">9{,}000</span>-run window-design sweep. The verdict
+is mixed. WFER carries real signal: the per-period normalized ratio
+correlates with true forward Sharpe at Spearman <span
+class="math inline">+0.45</span> and detects deployed losers at AUC
+<span class="math inline">0.74</span>. But it is dominated by simpler
+statistics computed from the same folds—the stitched OOS <span
+class="math inline">t</span>-statistic reaches AUC <span
+class="math inline">0.78</span> and the stitched OOS Sharpe <span
+class="math inline">\rho\,{+}0.53</span>—so the ratio’s distinguishing
+step, dividing by IS PnL, only adds noise. The folk thresholds are
+miscalibrated: runs with <span class="math inline">\wfer\ge 0.8</span>
+do no better forward than runs at <span
+class="math inline">0.5</span>–<span class="math inline">0.8</span>
+(mean forward Sharpe <span class="math inline">+0.98</span> vs. <span
+class="math inline">+0.99</span>), the “borderline/overfit” zone below
+<span class="math inline">0.5</span> contains configurations averaging
+<span class="math inline">+0.59</span> to <span
+class="math inline">+0.83</span>, and the literal raw-PnL ratio—which
+compares accumulation windows of different lengths—reaches <span
+class="math inline">0.5</span> in only <span
+class="math inline">6</span> of <span class="math inline">8{,}000</span>
+runs, so the thresholds are essentially unreachable under the formula
+that usually accompanies them. The per-window ratio is ill-conditioned
+in <span class="math inline">21\%</span> of runs (<span
+class="math inline">47\%</span> under the null), where near-zero IS
+denominators make single-window readings arbitrarily wild. Window
+folklore fares partly better. Anchored walk-forward beats rolling under
+stationarity (<span class="math inline">+0.10</span> forward Sharpe,
+<span class="math inline">p\approx 2\times10^{-39}</span>) and rolling
+beats anchored under drift (<span class="math inline">+0.08</span>) and
+breaks (<span class="math inline">+0.15</span>): the advertised
+direction, with an unadvertised stationarity price. Window length
+matters mainly for the <em>estimate</em>, not the deployment: the
+WFER–forward rank correlation peaks at <span
+class="math inline">0.52</span> near nine folds and collapses to <span
+class="math inline">0.23</span> at one fold, while deployed performance
+is flat for train windows of <span class="math inline">126</span>
+periods or more. Across procedures, rolling deploys best (mean forward
+Sharpe <span class="math inline">0.66</span> vs. <span
+class="math inline">0.62</span> for anchored, CPCV-lite, and <span
+class="math inline">k</span>-fold, <span class="math inline">0.56</span>
+for a single split); naive shuffled <span
+class="math inline">k</span>-fold is the most optimistic estimator
+(<span class="math inline">+0.08</span> Sharpe bias, worse under drift
+and breaks); CPCV-lite’s estimate ranks outcomes best (<span
+class="math inline">\rho\,0.64</span>). In short: WFER is informative
+but redundant; its thresholds are folklore and miscalibrated; the
+window-design advice is directionally right and incompletely priced.</p>
