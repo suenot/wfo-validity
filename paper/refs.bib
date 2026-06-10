@@ -1,0 +1,241 @@
+% ============================================================
+% refs.bib — "Does Walk-Forward Validation Predict Out-of-Sample
+% Performance? A Controlled Study of the Walk-Forward Efficiency
+% Ratio and Window Design"
+%
+% All bibliographic data verified against publisher pages /
+% Crossref, June 2026. natbib-compatible (use \usepackage{natbib}
+% and a *nat bibliography style, e.g. plainnat or abbrvnat).
+% \url{} fields require \usepackage{url} or hyperref.
+% ============================================================
+
+% ------------------------------------------------------------
+% Walk-forward optimization: origin and practitioner canon
+% ------------------------------------------------------------
+
+@book{pardo1992design,
+  author    = {Pardo, Robert},
+  title     = {Design, Testing, and Optimization of Trading Systems},
+  publisher = {John Wiley \& Sons},
+  address   = {New York},
+  year      = {1992},
+  isbn      = {978-0-471-55446-2},
+  note      = {First presentation of walk-forward analysis}
+}
+
+@book{pardo2008evaluation,
+  author    = {Pardo, Robert},
+  title     = {The Evaluation and Optimization of Trading Strategies},
+  edition   = {2nd},
+  publisher = {John Wiley \& Sons},
+  address   = {Hoboken, NJ},
+  year      = {2008},
+  isbn      = {978-0-470-12801-5},
+  doi       = {10.1002/9781119196969},
+  note      = {Defines walk-forward analysis and walk-forward efficiency (WFE)}
+}
+
+@book{tomasini2009trading,
+  author    = {Tomasini, Emilio and Jaekle, Urban},
+  title     = {Trading Systems: A New Approach to System Development and Portfolio Optimisation},
+  publisher = {Harriman House},
+  address   = {Petersfield, UK},
+  year      = {2009},
+  isbn      = {978-1-905641-79-6}
+}
+
+@misc{tradestation_wfo,
+  author       = {{TradeStation Technologies}},
+  title        = {About the Walk-Forward Optimizer},
+  howpublished = {TradeStation Platform Help, \url{https://help.tradestation.com/10_00/eng/tswfo/topics/about_wfo.htm}},
+  note         = {Software documentation; default pass criterion requires walk-forward efficiency of 50\% or better. Accessed June 2026}
+}
+
+% ------------------------------------------------------------
+% Backtest overfitting and multiple testing in finance
+% ------------------------------------------------------------
+
+@book{lopezdeprado2018advances,
+  author    = {L{\'o}pez de Prado, Marcos},
+  title     = {Advances in Financial Machine Learning},
+  publisher = {John Wiley \& Sons},
+  address   = {Hoboken, NJ},
+  year      = {2018},
+  isbn      = {978-1-119-48208-6},
+  note      = {Chapters 7 and 11--12 cover purged $k$-fold and combinatorial purged cross-validation (CPCV)}
+}
+
+@article{bailey2014pseudomathematics,
+  author  = {Bailey, David H. and Borwein, Jonathan M. and L{\'o}pez de Prado, Marcos and Zhu, Qiji Jim},
+  title   = {Pseudo-Mathematics and Financial Charlatanism: The Effects of Backtest Overfitting on Out-of-Sample Performance},
+  journal = {Notices of the American Mathematical Society},
+  year    = {2014},
+  volume  = {61},
+  number  = {5},
+  pages   = {458--471},
+  doi     = {10.1090/noti1105}
+}
+
+@article{bailey2017probability,
+  author  = {Bailey, David H. and Borwein, Jonathan M. and L{\'o}pez de Prado, Marcos and Zhu, Qiji Jim},
+  title   = {The Probability of Backtest Overfitting},
+  journal = {Journal of Computational Finance},
+  year    = {2017},
+  volume  = {20},
+  number  = {4},
+  pages   = {39--69},
+  doi     = {10.21314/JCF.2016.322}
+}
+
+@article{bailey2014deflated,
+  author  = {Bailey, David H. and L{\'o}pez de Prado, Marcos},
+  title   = {The Deflated {Sharpe} Ratio: Correcting for Selection Bias, Backtest Overfitting, and Non-Normality},
+  journal = {The Journal of Portfolio Management},
+  year    = {2014},
+  volume  = {40},
+  number  = {5},
+  pages   = {94--107},
+  doi     = {10.3905/jpm.2014.40.5.094}
+}
+
+@article{harvey2015backtesting,
+  author  = {Harvey, Campbell R. and Liu, Yan},
+  title   = {Backtesting},
+  journal = {The Journal of Portfolio Management},
+  year    = {2015},
+  volume  = {42},
+  number  = {1},
+  pages   = {13--28},
+  doi     = {10.3905/jpm.2015.42.1.013}
+}
+
+@article{arnott2019backtesting,
+  author  = {Arnott, Rob and Harvey, Campbell R. and Markowitz, Harry},
+  title   = {A Backtesting Protocol in the Era of Machine Learning},
+  journal = {The Journal of Financial Data Science},
+  year    = {2019},
+  volume  = {1},
+  number  = {1},
+  pages   = {64--74},
+  doi     = {10.3905/jfds.2019.1.064}
+}
+
+% ------------------------------------------------------------
+% Data snooping and predictive-ability tests
+% ------------------------------------------------------------
+
+@article{white2000reality,
+  author  = {White, Halbert},
+  title   = {A Reality Check for Data Snooping},
+  journal = {Econometrica},
+  year    = {2000},
+  volume  = {68},
+  number  = {5},
+  pages   = {1097--1126},
+  doi     = {10.1111/1468-0262.00152}
+}
+
+@article{hansen2005test,
+  author  = {Hansen, Peter Reinhard},
+  title   = {A Test for Superior Predictive Ability},
+  journal = {Journal of Business \& Economic Statistics},
+  year    = {2005},
+  volume  = {23},
+  number  = {4},
+  pages   = {365--380},
+  doi     = {10.1198/073500105000000063}
+}
+
+% ------------------------------------------------------------
+% Cross-validation and evaluation schemes for time series
+% ------------------------------------------------------------
+
+@article{tashman2000outofsample,
+  author  = {Tashman, Leonard J.},
+  title   = {Out-of-Sample Tests of Forecasting Accuracy: An Analysis and Review},
+  journal = {International Journal of Forecasting},
+  year    = {2000},
+  volume  = {16},
+  number  = {4},
+  pages   = {437--450},
+  doi     = {10.1016/S0169-2070(00)00065-0}
+}
+
+@article{bergmeir2012use,
+  author  = {Bergmeir, Christoph and Ben{\'i}tez, Jos{\'e} M.},
+  title   = {On the Use of Cross-Validation for Time Series Predictor Evaluation},
+  journal = {Information Sciences},
+  year    = {2012},
+  volume  = {191},
+  pages   = {192--213},
+  doi     = {10.1016/j.ins.2011.12.028}
+}
+
+@article{bergmeir2018note,
+  author  = {Bergmeir, Christoph and Hyndman, Rob J. and Koo, Bonsoo},
+  title   = {A Note on the Validity of Cross-Validation for Evaluating Autoregressive Time Series Prediction},
+  journal = {Computational Statistics \& Data Analysis},
+  year    = {2018},
+  volume  = {120},
+  pages   = {70--83},
+  doi     = {10.1016/j.csda.2017.11.003}
+}
+
+@article{cerqueira2020evaluating,
+  author  = {Cerqueira, Vitor and Torgo, Luis and Mozeti{\v c}, Igor},
+  title   = {Evaluating Time Series Forecasting Models: An Empirical Study on Performance Estimation Methods},
+  journal = {Machine Learning},
+  year    = {2020},
+  volume  = {109},
+  number  = {11},
+  pages   = {1997--2028},
+  doi     = {10.1007/s10994-020-05910-7}
+}
+
+% ------------------------------------------------------------
+% In-sample vs out-of-sample tests; window choice under instability
+% ------------------------------------------------------------
+
+@article{inoue2005insample,
+  author  = {Inoue, Atsushi and Kilian, Lutz},
+  title   = {In-Sample or Out-of-Sample Tests of Predictability: Which One Should We Use?},
+  journal = {Econometric Reviews},
+  year    = {2005},
+  volume  = {23},
+  number  = {4},
+  pages   = {371--402},
+  doi     = {10.1081/ETC-200040785}
+}
+
+@article{rossi2012outofsample,
+  author  = {Rossi, Barbara and Inoue, Atsushi},
+  title   = {Out-of-Sample Forecast Tests Robust to the Choice of Window Size},
+  journal = {Journal of Business \& Economic Statistics},
+  year    = {2012},
+  volume  = {30},
+  number  = {3},
+  pages   = {432--453},
+  doi     = {10.1080/07350015.2012.693850}
+}
+
+@article{inoue2017rolling,
+  author  = {Inoue, Atsushi and Jin, Lu and Rossi, Barbara},
+  title   = {Rolling Window Selection for Out-of-Sample Forecasting with Time-Varying Parameters},
+  journal = {Journal of Econometrics},
+  year    = {2017},
+  volume  = {196},
+  number  = {1},
+  pages   = {55--67},
+  doi     = {10.1016/j.jeconom.2016.03.006}
+}
+
+@article{rossi2013exchange,
+  author  = {Rossi, Barbara},
+  title   = {Exchange Rate Predictability},
+  journal = {Journal of Economic Literature},
+  year    = {2013},
+  volume  = {51},
+  number  = {4},
+  pages   = {1063--1119},
+  doi     = {10.1257/jel.51.4.1063}
+}

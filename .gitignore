@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+results/*.csv
+paper/main.pdf
+paper/main.aux
+paper/main.bbl
+paper/main.log
+paper/main.out
+arxiv_submission/
+arxiv_submission.tar.gz
+.DS_Store
